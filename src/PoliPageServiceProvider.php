@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace PoliPage\Laravel;
 
+use Closure;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
+use PoliPage\Events\RetryEvent;
+use PoliPage\Laravel\Events\PoliPageErrored;
+use PoliPage\Laravel\Events\PoliPageRetrying;
 use PoliPage\Laravel\Http\PoliPageResponseFactory;
 use PoliPage\PoliPage;
+use PoliPage\PoliPageException;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -40,6 +46,10 @@ final class PoliPageServiceProvider extends ServiceProvider
             /** @var LoggerInterface|null $logger */
             $logger = self::resolveOptional($app, $config['logger'] ?? null, LoggerInterface::class);
 
+            $dispatcher = $app->make(Dispatcher::class);
+            $onRetry = self::buildRetryHook($app, $dispatcher, $config['on_retry'] ?? null);
+            $onError = self::buildErrorHook($app, $dispatcher, $config['on_error'] ?? null);
+
             return new PoliPage(
                 apiKey: (string) $config['api_key'],
                 baseUrl: self::asNullableString($config['base_url'] ?? null),
@@ -50,7 +60,8 @@ final class PoliPageServiceProvider extends ServiceProvider
                 requestFactory: $requestFactory,
                 streamFactory: $streamFactory,
                 logger: $logger,
-                // onRetry / onError hooks land in Task 7.
+                onRetry: $onRetry,
+                onError: $onError,
             );
         });
     }
@@ -122,6 +133,45 @@ final class PoliPageServiceProvider extends ServiceProvider
                 );
             }
         }
+    }
+
+    private static function buildRetryHook(Application $app, Dispatcher $dispatcher, mixed $userBinding): Closure
+    {
+        if ($userBinding !== null) {
+            return self::resolveUserClosure($app, $userBinding, 'on_retry');
+        }
+
+        return static function (RetryEvent $event) use ($dispatcher): void {
+            $dispatcher->dispatch(new PoliPageRetrying($event));
+        };
+    }
+
+    private static function buildErrorHook(Application $app, Dispatcher $dispatcher, mixed $userBinding): Closure
+    {
+        if ($userBinding !== null) {
+            return self::resolveUserClosure($app, $userBinding, 'on_error');
+        }
+
+        return static function (PoliPageException $exception) use ($dispatcher): void {
+            $dispatcher->dispatch(new PoliPageErrored($exception));
+        };
+    }
+
+    private static function resolveUserClosure(Application $app, mixed $binding, string $configKey): Closure
+    {
+        if (! is_string($binding)) {
+            throw new InvalidArgumentException(
+                "Poli Page config '{$configKey}' must be a container binding (string). Got: ".get_debug_type($binding),
+            );
+        }
+        $resolved = $app->make($binding);
+        if (! is_callable($resolved)) {
+            throw new InvalidArgumentException(
+                "Poli Page config '{$configKey}': container binding '{$binding}' must resolve to a callable. Got: ".get_debug_type($resolved),
+            );
+        }
+
+        return Closure::fromCallable($resolved);
     }
 
     /**
