@@ -8,7 +8,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__ . '/../routes/web.php',
+        web: __DIR__.'/../routes/web.php',
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Why: demo POSTs/DELETEs to /api/* are made from the same page via fetch()

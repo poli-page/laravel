@@ -31,7 +31,7 @@ final class RenderToFileCommand extends Command
 
     public function handle(): int
     {
-        $path = sys_get_temp_dir() . '/poli-page-demo-file.pdf';
+        $path = sys_get_temp_dir().'/poli-page-demo-file.pdf';
 
         renderToFile($this->client, new ProjectModeInput(
             project: 'getting-started',
