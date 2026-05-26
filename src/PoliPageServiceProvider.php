@@ -11,6 +11,7 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
 use PoliPage\Events\RetryEvent;
+use PoliPage\Laravel\Console\RenderCommand;
 use PoliPage\Laravel\Events\PoliPageErrored;
 use PoliPage\Laravel\Events\PoliPageRetrying;
 use PoliPage\Laravel\Http\PoliPageResponseFactory;
@@ -71,6 +72,10 @@ final class PoliPageServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../config/poli-page.php' => $this->app->configPath('poli-page.php'),
         ], 'poli-page-config');
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([RenderCommand::class]);
+        }
     }
 
     /**
