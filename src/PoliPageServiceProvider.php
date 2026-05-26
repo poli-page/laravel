@@ -8,6 +8,7 @@ use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
+use PoliPage\Laravel\Http\PoliPageResponseFactory;
 use PoliPage\PoliPage;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -19,6 +20,8 @@ final class PoliPageServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/poli-page.php', 'poli-page');
+
+        $this->app->singleton(PoliPageResponseFactory::class);
 
         $this->app->singleton(PoliPage::class, function (Application $app): PoliPage {
             /** @var array<string, mixed> $config */
