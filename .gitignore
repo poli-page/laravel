@@ -28,6 +28,9 @@ venv/
 vendor/
 composer.lock
 .phpunit.cache/
+.php-cs-fixer.cache
+.phpstan.cache/
+.phpunit.result.cache
 
 # Go
 bin/

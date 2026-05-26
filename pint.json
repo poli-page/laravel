@@ -1,0 +1,13 @@
+{
+    "preset": "laravel",
+    "rules": {
+        "declare_strict_types": true,
+        "@PHP83Migration": true,
+        "ordered_imports": { "imports_order": ["class", "function", "const"] },
+        "global_namespace_import": {
+            "import_classes": true,
+            "import_functions": false,
+            "import_constants": false
+        }
+    }
+}
