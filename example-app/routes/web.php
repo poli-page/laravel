@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\DemoController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\RenderController;
 use Illuminate\Support\Facades\Route;
 
-// Demo UI lands in Task 11; placeholder for now.
-Route::get('/', fn (): string => 'Demo UI arrives in Task 11.');
+Route::get('/', DemoController::class)->name('demo');
 
 Route::get('/api/render/pdf', [RenderController::class, 'pdf']);
 Route::get('/api/render/stream', [RenderController::class, 'stream']);
