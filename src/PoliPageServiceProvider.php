@@ -7,7 +7,12 @@ namespace PoliPage\Laravel;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
+use InvalidArgumentException;
 use PoliPage\PoliPage;
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Http\Message\StreamFactoryInterface;
+use Psr\Log\LoggerInterface;
 
 final class PoliPageServiceProvider extends ServiceProvider
 {
@@ -18,17 +23,31 @@ final class PoliPageServiceProvider extends ServiceProvider
         $this->app->singleton(PoliPage::class, function (Application $app): PoliPage {
             /** @var array<string, mixed> $config */
             $config = $app->make(ConfigRepository::class)->get('poli-page', []);
+            self::validate($config);
 
             /** @var array<string, mixed> $retries */
             $retries = is_array($config['retries'] ?? null) ? $config['retries'] : [];
 
+            /** @var ClientInterface|null $httpClient */
+            $httpClient = self::resolveOptional($app, $config['http_client'] ?? null, ClientInterface::class);
+            /** @var RequestFactoryInterface|null $requestFactory */
+            $requestFactory = self::resolveOptional($app, $config['request_factory'] ?? null, RequestFactoryInterface::class);
+            /** @var StreamFactoryInterface|null $streamFactory */
+            $streamFactory = self::resolveOptional($app, $config['stream_factory'] ?? null, StreamFactoryInterface::class);
+            /** @var LoggerInterface|null $logger */
+            $logger = self::resolveOptional($app, $config['logger'] ?? null, LoggerInterface::class);
+
             return new PoliPage(
-                apiKey: (string) ($config['api_key'] ?? ''),
+                apiKey: (string) $config['api_key'],
                 baseUrl: self::asNullableString($config['base_url'] ?? null),
                 maxRetries: self::asNullableInt($retries['max_attempts'] ?? null),
                 retryDelay: self::asNullableFloat($retries['delay_seconds'] ?? null),
                 timeout: self::asNullableFloat($config['timeout'] ?? null),
-                // PSR providers / logger / hooks land in Task 5 + Task 7.
+                httpClient: $httpClient,
+                requestFactory: $requestFactory,
+                streamFactory: $streamFactory,
+                logger: $logger,
+                // onRetry / onError hooks land in Task 7.
             );
         });
     }
@@ -38,6 +57,94 @@ final class PoliPageServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../config/poli-page.php' => $this->app->configPath('poli-page.php'),
         ], 'poli-page-config');
+    }
+
+    /**
+     * @param  array<string, mixed>  $config
+     */
+    private static function validate(array $config): void
+    {
+        $apiKey = $config['api_key'] ?? null;
+        if (! is_string($apiKey) || $apiKey === '') {
+            throw new InvalidArgumentException(
+                'Poli Page api_key is required. Set POLI_PAGE_API_KEY in your .env file.',
+            );
+        }
+        if (preg_match('/^pp_(test|live)_/', $apiKey) !== 1) {
+            throw new InvalidArgumentException(
+                'Poli Page API key must start with pp_test_ or pp_live_. '
+                .'Get one at https://app.poli.page/settings/api-keys.',
+            );
+        }
+
+        $timeout = $config['timeout'] ?? null;
+        if ($timeout !== null) {
+            $timeout = (float) $timeout;
+            if ($timeout <= 0 || $timeout > 600) {
+                throw new InvalidArgumentException(
+                    "Poli Page timeout must be > 0 and <= 600 seconds. Got: {$timeout}.",
+                );
+            }
+        }
+
+        /** @var array<string, mixed> $retries */
+        $retries = is_array($config['retries'] ?? null) ? $config['retries'] : [];
+
+        $maxAttempts = $retries['max_attempts'] ?? null;
+        if ($maxAttempts !== null) {
+            $maxAttempts = (int) $maxAttempts;
+            if ($maxAttempts < 0 || $maxAttempts > 10) {
+                throw new InvalidArgumentException(
+                    "Poli Page retries.max_attempts must be between 0 and 10. Got: {$maxAttempts}.",
+                );
+            }
+        }
+
+        $delaySeconds = $retries['delay_seconds'] ?? null;
+        if ($delaySeconds !== null) {
+            $delaySeconds = (float) $delaySeconds;
+            if ($delaySeconds < 0 || $delaySeconds > 30) {
+                throw new InvalidArgumentException(
+                    "Poli Page retries.delay_seconds must be between 0 and 30 seconds. Got: {$delaySeconds}.",
+                );
+            }
+        }
+
+        $baseUrl = $config['base_url'] ?? null;
+        if ($baseUrl !== null) {
+            $scheme = parse_url((string) $baseUrl, PHP_URL_SCHEME);
+            if (! in_array($scheme, ['http', 'https'], true)) {
+                throw new InvalidArgumentException(
+                    "Poli Page base_url must use http or https scheme. Got: {$baseUrl}.",
+                );
+            }
+        }
+    }
+
+    /**
+     * @template T of object
+     *
+     * @param  class-string<T>  $expected
+     * @return T|null
+     */
+    private static function resolveOptional(Application $app, mixed $binding, string $expected): ?object
+    {
+        if ($binding === null) {
+            return null;
+        }
+        if (! is_string($binding)) {
+            throw new InvalidArgumentException(
+                "Poli Page config binding for {$expected} must be a container key (string). Got: ".get_debug_type($binding),
+            );
+        }
+        $resolved = $app->make($binding);
+        if (! $resolved instanceof $expected) {
+            throw new InvalidArgumentException(
+                "Poli Page config: container binding '{$binding}' must resolve to {$expected}. Got: ".get_debug_type($resolved),
+            );
+        }
+
+        return $resolved;
     }
 
     private static function asNullableString(mixed $value): ?string
