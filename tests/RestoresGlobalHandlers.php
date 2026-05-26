@@ -22,6 +22,7 @@ use Throwable;
 trait RestoresGlobalHandlers
 {
     private mixed $errorHandlerBaseline = null;
+
     private mixed $exceptionHandlerBaseline = null;
 
     protected function setUp(): void
@@ -64,9 +65,9 @@ trait RestoresGlobalHandlers
 
     private static function popUntil(callable $peek, callable $pop, mixed $target): void
     {
-        for ($i = 0; $i < 50; ++$i) {
+        for ($i = 0; $i < 50; $i++) {
             $current = $peek();
-            if ($current === $target || null === $current) {
+            if ($current === $target || $current === null) {
                 return;
             }
             $pop();

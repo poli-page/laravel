@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PoliPage\Laravel\Tests;
 
+use Illuminate\Foundation\Application;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 use PoliPage\Laravel\Facades\PoliPage;
 use PoliPage\Laravel\PoliPageServiceProvider;
@@ -13,7 +14,7 @@ abstract class TestCase extends BaseTestCase
     use RestoresGlobalHandlers;
 
     /**
-     * @param  \Illuminate\Foundation\Application  $app
+     * @param  Application  $app
      * @return array<int, class-string>
      */
     protected function getPackageProviders($app): array
@@ -22,7 +23,7 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
-     * @param  \Illuminate\Foundation\Application  $app
+     * @param  Application  $app
      * @return array<string, class-string>
      */
     protected function getPackageAliases($app): array
@@ -31,7 +32,7 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
-     * @param  \Illuminate\Foundation\Application  $app
+     * @param  Application  $app
      */
     protected function defineEnvironment($app): void
     {
