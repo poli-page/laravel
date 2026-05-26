@@ -1,0 +1,32 @@
+{
+    "name": "poli-page/laravel-example",
+    "description": "Example Laravel app demonstrating poli-page/laravel. Not published.",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": "^8.3",
+        "laravel/framework": "^11.0",
+        "poli-page/laravel": "@dev",
+        "poli-page/sdk": "@dev"
+    },
+    "repositories": [
+        { "type": "path", "url": "../", "options": { "symlink": true, "versions": { "poli-page/laravel": "0.1.0" } } },
+        { "type": "path", "url": "../../sdk-php.md", "options": { "symlink": true, "versions": { "poli-page/sdk": "0.1.0" } } }
+    ],
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": true
+        },
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true
+    },
+    "autoload": {
+        "psr-4": { "App\\": "app/" }
+    },
+    "extra": {
+        "laravel": {
+            "dont-discover": []
+        }
+    }
+}
