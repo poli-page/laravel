@@ -573,10 +573,11 @@
     },
     'doc-get': async target => {
       if (!state.docId) return;
-      const r = await fetch(`/api/documents/${state.docId}`, { redirect: 'follow' });
-      if (!r.ok) return renderError(target, `HTTP ${r.status}`);
-      const blob = await r.blob();
-      renderIframe(target, URL.createObjectURL(blob), 'stored pdf', `${blob.size.toLocaleString()} bytes`);
+      // Why: /api/documents/{id} returns a 302 to a presigned S3 URL. Fetching
+      // and following the redirect from JS hits CORS (S3 doesn't expose
+      // Access-Control-Allow-Origin). An <iframe> navigation isn't a fetch,
+      // so the browser follows the redirect natively without CORS.
+      renderIframe(target, `/api/documents/${state.docId}`, 'stored pdf', 'served via 302 → presigned S3 URL');
     },
     'doc-preview': async target => {
       if (!state.docId) return;
