@@ -20,18 +20,18 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Why: surface SDK errors as their underlying HTTP status (e.g. 404 for
-        // a missing document) instead of Laravel's default 500. Mirrors the
-        // global error mapping shipped by the Next.js / NestJS / FastAPI demos.
+        // a missing document) instead of Laravel's default 500. Sources every
+        // field from the SDK's canonical toPayload() so the wire shape matches
+        // the other framework demos.
         $exceptions->render(function (PoliPageException $e): JsonResponse {
-            $status = $e->status >= 400 ? $e->status : 500;
+            $payload = $e->toPayload();
+            $status = $payload['status'] ?? 500;
 
             return new JsonResponse([
-                'error' => [
-                    'code' => $e->errorCode,
-                    'message' => $e->getMessage(),
-                    'status' => $e->status,
-                    'requestId' => $e->requestId,
-                ],
+                'code' => $payload['code'],
+                'message' => $payload['message'],
+                'status' => $status,
+                'requestId' => $payload['requestId'],
             ], $status);
         });
     })
