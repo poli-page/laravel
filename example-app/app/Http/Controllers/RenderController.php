@@ -13,6 +13,8 @@ use PoliPage\PoliPage;
 use PoliPage\ProjectModeInput;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
+use function PoliPage\renderToFile;
+
 final class RenderController
 {
     public function __construct(
@@ -62,6 +64,27 @@ final class RenderController
         $result = $this->poliPage->render->preview($input);
 
         return $this->factory->preview($result);
+    }
+
+    /** Demo step 3: renderToFile() — stream the PDF straight to disk, memory-bounded. */
+    public function renderFile(): JsonResponse
+    {
+        $output = storage_path('poli-page/welcome.pdf');
+        if (! is_dir(\dirname($output))) {
+            mkdir(\dirname($output), 0o775, true);
+        }
+
+        renderToFile($this->poliPage, new ProjectModeInput(
+            project: 'getting-started',
+            template: 'welcome',
+            data: ['name' => 'renderToFile demo'],
+            version: '1.0.0',
+        ), $output);
+
+        return new JsonResponse([
+            'path' => $output,
+            'sizeBytes' => filesize($output) ?: 0,
+        ]);
     }
 
     /** Demo step 5: render->document() — store the document, return descriptor JSON. */
