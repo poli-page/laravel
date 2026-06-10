@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'api_key' => env('POLI_PAGE_API_KEY'),
-    'base_url' => env('POLI_PAGE_BASE_URL', 'https://api-develop.poli.page'),
+    'base_url' => env('POLI_PAGE_BASE_URL'),
     'timeout' => env('POLI_PAGE_TIMEOUT'),
     'user_agent' => env('POLI_PAGE_USER_AGENT'),
     'retries' => [

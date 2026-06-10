@@ -19,7 +19,7 @@ final class ConfigValidationTest extends TestCase
 
         $app->make(Repository::class)->set('poli-page', [
             'api_key' => 'pp_test_valid',
-            'base_url' => 'https://api-develop.poli.page',
+            'base_url' => 'https://api.example.com',
             'timeout' => 30.0,
             'retries' => ['max_attempts' => 3, 'delay_seconds' => 0.25],
         ]);

@@ -26,7 +26,10 @@ final class RenderAgainstDevelopApiTest extends TestCase
         $key = (string) getenv('POLI_PAGE_API_KEY');
         $config = $app->make(Repository::class);
         $config->set('poli-page.api_key', $key !== '' ? $key : 'pp_test_placeholder_for_setup_only');
-        $config->set('poli-page.base_url', 'https://api-develop.poli.page');
+        $testBaseUrl = getenv('POLI_PAGE_TEST_BASE_URL');
+        if (is_string($testBaseUrl) && $testBaseUrl !== '') {
+            $config->set('poli-page.base_url', $testBaseUrl);
+        }
         $config->set('poli-page.timeout', 30.0);
     }
 
