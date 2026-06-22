@@ -71,6 +71,7 @@ final class DocumentController
         } catch (PoliPageException $e) {
             $payload = $e->toPayload();
             $status = $payload['status'] ?? 500;
+
             return new JsonResponse([
                 'caught' => true,
                 'code' => $payload['code'],
