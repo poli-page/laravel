@@ -71,6 +71,13 @@
         "allow-plugins": {
             "wikimedia/composer-merge-plugin": true,
             "php-http/discovery": true
+        },
+        "audit": {
+            "ignore": {
+                "PKSA-m5cs-t1y6-qpcs": "Temporary signed URL path confusion; fixed only in Laravel 12.61.1+. This package targets Laravel 10/11 (no advisory-clean release exists there) and does not generate temporary signed URLs.",
+                "PKSA-3r5d-mb8f-1qw9": "CRLF injection in the default email validation rule; fixed only in Laravel 12.60+. This package does not use the email validation rule.",
+                "PKSA-mdq4-51ck-6kdq": "CRLF injection in the default email validation rule (separate advisory ID, same root cause); fixed only in Laravel 12.60+. Not used by this package."
+            }
         }
     },
     "scripts": {
