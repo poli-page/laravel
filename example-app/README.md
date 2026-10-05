@@ -1,6 +1,6 @@
 # `poli-page/laravel` example app
 
-Minimal Laravel 11 app demonstrating every public method of the Poli Page PHP SDK through the Laravel package. Each route or command corresponds 1:1 to a step in the SDK's canonical demo (`../../sdk-php.md/examples/demo.php`). An interactive single-page demo UI lives at `GET /`.
+Minimal Laravel 13 app demonstrating every public method of the Poli Page PHP SDK through the Laravel package. Each route or command corresponds 1:1 to a step in the SDK's canonical demo (`../../sdk-php.md/examples/demo.php`). An interactive single-page demo UI lives at `GET /`.
 
 ## Setup
 

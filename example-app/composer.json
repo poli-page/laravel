@@ -5,7 +5,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
-        "laravel/framework": "^11.0",
+        "laravel/framework": "^13.0",
         "poli-page/laravel": "@dev",
         "poli-page/sdk": "@dev"
     },
