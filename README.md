@@ -24,7 +24,7 @@ This package wraps the Poli Page PHP SDK as a Laravel-native integration: a serv
 ## Requirements
 
 - PHP 8.3+
-- Laravel 10.x LTS or 11.x
+- Laravel 12.x or 13.x
 - A Poli Page API key from [app.poli.page](https://app.poli.page)
 
 ## Install
@@ -169,7 +169,7 @@ try {
 
 ## Example app
 
-A runnable Laravel 11 app at [`example-app/`](example-app/) demonstrates every public SDK method through routes, an interactive single-page dashboard at `GET /`, and an `app:demo:render-to-file` command.
+A runnable Laravel 13 app at [`example-app/`](example-app/) demonstrates every public SDK method through routes, an interactive single-page dashboard at `GET /`, and an `app:demo:render-to-file` command.
 
 ```bash
 cd example-app
@@ -188,7 +188,7 @@ php artisan serve
 
 | Package | Laravel | PHP |
 |---|---|---|
-| 0.1.x | 10.x LTS / 11.x | 8.3 / 8.4 |
+| 0.1.x | 12.x / 13.x | 8.3 / 8.4 / 8.5 |
 
 The package follows Laravel's own supported-versions window and tracks the latest stable PHP minor.
 
