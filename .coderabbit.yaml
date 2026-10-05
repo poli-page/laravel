@@ -63,7 +63,7 @@ reviews:
         stable and consistent with the other poli-page SDKs and integrations; no breaking changes
         without a major version bump and a CHANGELOG entry. Use idiomatic Laravel (container
         singletons, config(), event dispatcher, auto-discovery). Surface API errors in the
-        { error: { code } } shape from the SDK, never swallow them.
+        { error: CODE_STRING, detail?, issues? } (flat, API spec §4.1) shape from the SDK, never swallow them.
     - path: "config/**/*.php"
       instructions: >-
         The API key and base URL come from env vars (POLI_PAGE_API_KEY etc.), never hardcoded. Defaults
