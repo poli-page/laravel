@@ -36,8 +36,20 @@ composer require poli-page/laravel
 Package auto-discovery registers `PoliPageServiceProvider` and the `PoliPage` Facade alias. Add your API key to `.env`:
 
 ```
-POLI_PAGE_API_KEY=pp_test_your_key_here
+POLI_PAGE_API_KEY=pp_sandbox_x
 ```
+
+Each API key belongs to one environment of your organization and has the form `pp_{environment}_{32 lowercase hex characters}`. Start with your `sandbox` key:
+
+| Environment                           | Key            | Watermark | Counted |
+| ------------------------------------- | -------------- | --------- | ------- |
+| `sandbox` (every org)                 | `pp_sandbox_…` | yes       | no      |
+| `live` (every org, deletable on Pro+) | `pp_live_…`    | no        | yes     |
+| created on Pro+ (e.g. `staging`)      | `pp_staging_…` | no        | yes     |
+
+"Counted" means the render counts toward your organization's monthly PDF quota. The key picks the environment, and each render uses the copy of the project published in that environment, so there is no template version to pass.
+
+The package only requires the key to be set. A key that does not match `^pp_(?=[a-z][a-z0-9-]{0,19}_)[a-z][a-z0-9]*(?:-[a-z0-9]+)*_[0-9a-f]{32}$` logs one warning through Laravel's logger when the client is first resolved (the key itself is never logged), and the API answers `401` if it is invalid.
 
 Publish the config file when you need to override defaults:
 
@@ -45,13 +57,12 @@ Publish the config file when you need to override defaults:
 php artisan vendor:publish --tag=poli-page-config
 ```
 
-Verify the integration end-to-end from the CLI:
+Verify the integration end-to-end from the CLI with a `sandbox` key; every organization has the `getting-started` project's `welcome` template in its `sandbox` environment:
 
 ```bash
 php artisan poli-page:render \
     --project=getting-started \
     --template=welcome \
-    --template-version=1.0.0 \
     --data='{"name":"World"}' \
     -o welcome.pdf
 ```
@@ -66,7 +77,7 @@ namespace App\Http\Controllers;
 
 use PoliPage\Laravel\Http\PoliPageResponseFactory;
 use PoliPage\PoliPage;
-use PoliPage\ProjectModeInput;
+use PoliPage\RenderInput;
 
 class InvoiceController
 {
@@ -77,10 +88,9 @@ class InvoiceController
 
     public function show(string $id)
     {
-        $pdf = $this->poliPage->render->pdf(new ProjectModeInput(
+        $pdf = $this->poliPage->render->pdf(new RenderInput(
             project: 'invoices',
             template: 'default',
-            version: '1.0.0',
             data: ['invoice_id' => $id],
         ));
 
@@ -93,7 +103,7 @@ class InvoiceController
 
 | Option | Default | Description |
 |---|---|---|
-| `api_key` | `env('POLI_PAGE_API_KEY')` | Your Poli Page API key. Must start with `pp_test_` or `pp_live_`. |
+| `api_key` | `env('POLI_PAGE_API_KEY')` | Your Poli Page API key, `pp_{environment}_{32 hex}`. Required; a malformed value logs one warning and the API decides. |
 | `base_url` | SDK default | API endpoint. Override for staging or self-hosted. |
 | `timeout` | SDK default | Per-request timeout in seconds. Must be between `0` and `600`. |
 | `user_agent` | SDK default | Custom `User-Agent` header. |
@@ -127,10 +137,10 @@ return [
 |---|---|
 | `PoliPage\PoliPage` | SDK client singleton. Inject by FQCN; exposes `render` and `documents`. |
 | `PoliPage\Laravel\Facades\PoliPage` | Facade alias. Use `PoliPage::render()->pdf(...)` outside constructors. |
-| `PoliPage\Laravel\Http\PoliPageResponseFactory` | Builds `Response` / `StreamedResponse` / `RedirectResponse` with PDF, preview, and document-redirect headers. |
+| `PoliPage\Laravel\Http\PoliPageResponseFactory` | Builds `Response` / `StreamedResponse` / `RedirectResponse` with PDF, stored-document HTML preview (`documents->preview()`), and document-redirect headers. |
 | `PoliPage\Laravel\Events\PoliPageRetrying` | Laravel event dispatched for each SDK retry attempt. Wraps the SDK's `RetryEvent`. |
 | `PoliPage\Laravel\Events\PoliPageErrored` | Laravel event dispatched on terminal SDK errors. Wraps the underlying `PoliPageException`. |
-| `php artisan poli-page:render` | End-to-end smoke-test command. PDF or HTML preview output. |
+| `php artisan poli-page:render` | End-to-end smoke-test command. Renders a template to a PDF file. |
 
 Full reference: [docs/api.md](docs/api.md).
 

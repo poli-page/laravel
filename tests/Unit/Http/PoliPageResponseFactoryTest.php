@@ -12,9 +12,10 @@ use PHPUnit\Framework\TestCase;
 use PoliPage\DocumentDescriptor;
 use PoliPage\DocumentPreviewResult;
 use PoliPage\Laravel\Http\PoliPageResponseFactory;
-use PoliPage\PreviewResult;
 use PoliPage\RenderMetadata;
 use ReflectionClass;
+use ReflectionMethod;
+use ReflectionNamedType;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class PoliPageResponseFactoryTest extends TestCase
@@ -119,22 +120,23 @@ final class PoliPageResponseFactoryTest extends TestCase
         self::assertSame('%PDF-1.7 streamed bytes', $emitted);
     }
 
-    public function test_preview_returns_html_response(): void
+    public function test_preview_returns_html_response_for_a_stored_document(): void
     {
-        $preview = new PreviewResult('<html>...</html>', 3, 'sandbox');
+        $preview = new DocumentPreviewResult('<html>stored</html>', 5);
         $response = $this->factory->preview($preview);
 
         self::assertInstanceOf(Response::class, $response);
         self::assertSame('text/html; charset=utf-8', $response->headers->get('Content-Type'));
         self::assertCacheControlPrivateNoStore($response->headers->get('Cache-Control'));
-        self::assertSame('<html>...</html>', $response->getContent());
+        self::assertSame('<html>stored</html>', $response->getContent());
     }
 
-    public function test_preview_accepts_document_preview_result(): void
+    public function test_preview_takes_only_a_document_preview_result(): void
     {
-        $preview = new DocumentPreviewResult('<html>stored</html>', 5);
-        $response = $this->factory->preview($preview);
-        self::assertSame('<html>stored</html>', $response->getContent());
+        $type = (new ReflectionMethod(PoliPageResponseFactory::class, 'preview'))->getParameters()[0]->getType();
+
+        self::assertInstanceOf(ReflectionNamedType::class, $type);
+        self::assertSame(DocumentPreviewResult::class, $type->getName());
     }
 
     public function test_document_redirect_goes_to_302_presigned_url(): void
@@ -169,7 +171,6 @@ final class PoliPageResponseFactoryTest extends TestCase
             'projectSlug' => null,
             'templateId' => null,
             'templateSlug' => null,
-            'version' => null,
             'environment' => 'sandbox',
             'apiKeyId' => null,
             'format' => 'A4',

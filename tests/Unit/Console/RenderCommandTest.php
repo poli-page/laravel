@@ -9,14 +9,14 @@ use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\LegacyMockInterface;
 use Mockery\MockInterface;
-use PoliPage\InlineModeInput;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PoliPage\Laravel\Tests\TestCase;
 use PoliPage\PoliPage;
 use PoliPage\PoliPageException;
-use PoliPage\PreviewResult;
-use PoliPage\ProjectModeInput;
 use PoliPage\Render;
+use PoliPage\RenderInput;
 use ReflectionClass;
+use Symfony\Component\Console\Exception\InvalidOptionException;
 
 final class RenderCommandTest extends TestCase
 {
@@ -35,14 +35,10 @@ final class RenderCommandTest extends TestCase
         if (file_exists($this->outputPath)) {
             unlink($this->outputPath);
         }
-        $htmlPath = preg_replace('/\.pdf$/', '.html', $this->outputPath);
-        if ($htmlPath !== null && file_exists($htmlPath)) {
-            unlink($htmlPath);
-        }
         parent::tearDown();
     }
 
-    public function test_project_mode_writes_pdf_bytes(): void
+    public function test_render_writes_pdf_bytes(): void
     {
         $app = $this->app;
         \assert($app !== null);
@@ -50,10 +46,9 @@ final class RenderCommandTest extends TestCase
         $render = $this->mockRender();
         $render->shouldReceive('pdf')
             ->once()
-            ->andReturnUsing(function (ProjectModeInput $input): string {
-                self::assertSame('invoices', $input->project);
-                self::assertSame('default', $input->template);
-                self::assertSame('1.0.0', $input->version);
+            ->andReturnUsing(function (RenderInput $input): string {
+                self::assertSame('getting-started', $input->project);
+                self::assertSame('welcome', $input->template);
                 self::assertSame(['name' => 'Ada'], $input->data);
 
                 return "%PDF-1.7\nstub\n%%EOF\n";
@@ -62,9 +57,8 @@ final class RenderCommandTest extends TestCase
         $app->instance(PoliPage::class, $this->stubClient($render));
 
         $exitCode = Artisan::call('poli-page:render', [
-            '--project' => 'invoices',
-            '--template' => 'default',
-            '--template-version' => '1.0.0',
+            '--project' => 'getting-started',
+            '--template' => 'welcome',
             '--data' => '{"name":"Ada"}',
             '--output' => $this->outputPath,
         ]);
@@ -75,38 +69,43 @@ final class RenderCommandTest extends TestCase
         self::assertStringContainsString('Rendered', Artisan::output());
     }
 
-    public function test_inline_html_mode_for_preview(): void
+    public function test_missing_project_or_template_is_invalid(): void
     {
         $app = $this->app;
         \assert($app !== null);
 
         $render = $this->mockRender();
-        $render->shouldReceive('preview')
-            ->once()
-            ->andReturnUsing(function (InlineModeInput $input): PreviewResult {
-                self::assertSame('<h1>Hi</h1>', $input->template);
-
-                return new PreviewResult('<html><h1>Hi</h1></html>', 1, 'sandbox');
-            });
-
+        $render->shouldNotReceive('pdf');
         $app->instance(PoliPage::class, $this->stubClient($render));
 
-        $htmlInput = sys_get_temp_dir().'/poli-page-render-input-'.uniqid().'.html';
-        file_put_contents($htmlInput, '<h1>Hi</h1>');
-        $htmlOutput = preg_replace('/\.pdf$/', '.html', $this->outputPath);
-        \assert($htmlOutput !== null);
-
         $exitCode = Artisan::call('poli-page:render', [
-            '--html' => $htmlInput,
-            '--template' => 'inline',
-            '--preview' => true,
-            '--output' => $htmlOutput,
+            '--project' => 'getting-started',
+            '--output' => $this->outputPath,
         ]);
-        unlink($htmlInput);
 
-        self::assertSame(0, $exitCode);
-        self::assertFileExists($htmlOutput);
-        self::assertStringContainsString('<h1>Hi</h1>', (string) file_get_contents($htmlOutput));
+        self::assertSame(2, $exitCode);
+        self::assertStringContainsString('--project and --template are required', Artisan::output());
+    }
+
+    /** @return iterable<string, array{0: string, 1: string|bool}> */
+    public static function removedOptionProvider(): iterable
+    {
+        yield 'template version' => ['--template-version', '1.0.0'];
+        yield 'preview' => ['--preview', true];
+        yield 'inline html' => ['--html', 'template.html'];
+    }
+
+    #[DataProvider('removedOptionProvider')]
+    public function test_removed_options_no_longer_exist(string $option, string|bool $value): void
+    {
+        $this->expectException(InvalidOptionException::class);
+
+        Artisan::call('poli-page:render', [
+            '--project' => 'getting-started',
+            '--template' => 'welcome',
+            $option => $value,
+            '--output' => $this->outputPath,
+        ]);
     }
 
     public function test_poli_page_exception_exits_with_mapped_code(): void
@@ -116,21 +115,20 @@ final class RenderCommandTest extends TestCase
 
         $render = $this->mockRender();
         $render->shouldReceive('pdf')->andThrow(
-            new PoliPageException('bad version', 'INVALID_VERSION_FORMAT', 400),
+            new PoliPageException('Template not found', 'TEMPLATE_NOT_FOUND', 404),
         );
 
         $app->instance(PoliPage::class, $this->stubClient($render));
 
         $exitCode = Artisan::call('poli-page:render', [
-            '--project' => 'p',
-            '--template' => 't',
-            '--template-version' => 'bad',
+            '--project' => 'getting-started',
+            '--template' => 'does-not-exist',
             '--data' => '{}',
             '--output' => $this->outputPath,
         ]);
 
         self::assertSame(1, $exitCode, '4xx PoliPageException should exit with code 1');
-        self::assertStringContainsString('INVALID_VERSION_FORMAT', Artisan::output());
+        self::assertStringContainsString('TEMPLATE_NOT_FOUND', Artisan::output());
     }
 
     /**

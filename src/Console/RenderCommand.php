@@ -6,32 +6,24 @@ namespace PoliPage\Laravel\Console;
 
 use Illuminate\Console\Command;
 use InvalidArgumentException;
-use PoliPage\InlineModeInput;
 use PoliPage\PoliPage;
 use PoliPage\PoliPageException;
-use PoliPage\ProjectModeInput;
+use PoliPage\RenderInput;
 use RuntimeException;
 use Throwable;
 
 /**
  * `php artisan poli-page:render` — smoke-test the integration end to end.
- *
- * Why `--template-version` and not `--version`: Artisan (Symfony Console)
- * reserves `--version`/`-V` globally. Redefining it silently shadows the
- * global flag and the command produces no output. See CLAUDE.md §10.1.
  */
 final class RenderCommand extends Command
 {
     /** @var string */
     protected $signature = 'poli-page:render
-        {--project= : Project slug (required unless --html is given)}
+        {--project= : Project slug}
         {--template= : Template slug}
-        {--template-version= : Template version (required unless --html is given)}
         {--data= : Inline JSON for the data payload}
         {--data-file= : Read data payload from a file (- for stdin)}
-        {--html= : Inline-mode: render raw HTML from a file (preview only)}
-        {--o|output=./poli-page-render.pdf : Output file path}
-        {--preview : Render HTML preview instead of PDF}';
+        {--o|output=./poli-page-render.pdf : Output file path}';
 
     /** @var string */
     protected $description = 'Smoke-test the Poli Page package by rendering a template end-to-end.';
@@ -44,11 +36,7 @@ final class RenderCommand extends Command
     public function handle(): int
     {
         try {
-            $data = $this->resolveData();
-
-            return $this->option('preview')
-                ? $this->doPreview($data)
-                : $this->doPdf($data);
+            return $this->doPdf($this->resolveData());
         } catch (PoliPageException $e) {
             $this->error(sprintf(
                 '%s (status=%s, code=%s, requestId=%s)',
@@ -73,20 +61,18 @@ final class RenderCommand extends Command
     {
         $project = $this->stringOption('project');
         $template = $this->stringOption('template');
-        $version = $this->stringOption('template-version');
 
-        if ($project === '' || $template === '' || $version === '') {
-            $this->error('--project, --template and --template-version are required for PDF rendering.');
+        if ($project === '' || $template === '') {
+            $this->error('--project and --template are required.');
 
             return self::INVALID;
         }
 
         $start = microtime(true);
-        $pdf = $this->client->render->pdf(new ProjectModeInput(
+        $pdf = $this->client->render->pdf(new RenderInput(
             project: $project,
             template: $template,
             data: $data,
-            version: $version,
         ));
         $elapsedMs = (int) round((microtime(true) - $start) * 1000);
 
@@ -96,53 +82,6 @@ final class RenderCommand extends Command
         $this->info(sprintf(
             'Rendered %d bytes in %dms. Wrote to %s.',
             strlen($pdf),
-            $elapsedMs,
-            $outputPath,
-        ));
-
-        return self::SUCCESS;
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    private function doPreview(array $data): int
-    {
-        $htmlPath = $this->stringOption('html');
-        $template = $this->stringOption('template');
-
-        if ($htmlPath !== '') {
-            $html = $this->readFile($htmlPath);
-            $previewInput = new InlineModeInput(template: $html, data: $data);
-        } else {
-            $project = $this->stringOption('project');
-            $version = $this->stringOption('template-version');
-            if ($project === '' || $template === '' || $version === '') {
-                $this->error('Either --html, or all of --project --template --template-version, are required for preview.');
-
-                return self::INVALID;
-            }
-            $previewInput = new ProjectModeInput(
-                project: $project,
-                template: $template,
-                data: $data,
-                version: $version,
-            );
-        }
-
-        $start = microtime(true);
-        $result = $this->client->render->preview($previewInput);
-        $elapsedMs = (int) round((microtime(true) - $start) * 1000);
-
-        $outputPath = $this->stringOption('output');
-        if (str_ends_with($outputPath, '.pdf')) {
-            $outputPath = substr($outputPath, 0, -4).'.html';
-        }
-        $this->writeFile($outputPath, $result->html);
-
-        $this->info(sprintf(
-            'Rendered %d pages of HTML preview in %dms. Wrote to %s.',
-            $result->totalPages,
             $elapsedMs,
             $outputPath,
         ));

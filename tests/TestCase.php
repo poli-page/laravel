@@ -13,6 +13,8 @@ abstract class TestCase extends BaseTestCase
 {
     use RestoresGlobalHandlers;
 
+    protected const SANDBOX_API_KEY = 'pp_sandbox_0123456789abcdef0123456789abcdef';
+
     /**
      * @param  Application  $app
      * @return array<int, class-string>
@@ -36,6 +38,6 @@ abstract class TestCase extends BaseTestCase
      */
     protected function defineEnvironment($app): void
     {
-        $app['config']->set('poli-page.api_key', 'pp_test_unit_default');
+        $app['config']->set('poli-page.api_key', self::SANDBOX_API_KEY);
     }
 }

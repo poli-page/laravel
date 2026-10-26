@@ -6,7 +6,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use PoliPage\PoliPage;
-use PoliPage\ProjectModeInput;
+use PoliPage\RenderInput;
 
 use function PoliPage\renderToFile;
 
@@ -33,11 +33,10 @@ final class RenderToFileCommand extends Command
     {
         $path = sys_get_temp_dir().'/poli-page-demo-file.pdf';
 
-        renderToFile($this->client, new ProjectModeInput(
+        renderToFile($this->client, new RenderInput(
             project: 'getting-started',
             template: 'welcome',
             data: ['name' => 'renderToFile demo'],
-            version: '1.0.0',
         ), $path);
 
         $this->info(sprintf('Wrote PDF to %s (%d bytes).', $path, filesize($path) ?: 0));

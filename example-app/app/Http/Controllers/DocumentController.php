@@ -10,14 +10,14 @@ use Illuminate\Http\Response;
 use PoliPage\Laravel\Facades\PoliPage;
 use PoliPage\Laravel\Http\PoliPageResponseFactory;
 use PoliPage\PoliPageException;
-use PoliPage\ProjectModeInput;
+use PoliPage\RenderInput;
 use PoliPage\ThumbnailOptions;
 
 final class DocumentController
 {
     public function __construct(private readonly PoliPageResponseFactory $factory) {}
 
-    /** Demo step 6: documents->get(id) — fresh descriptor + 302 to presigned URL. */
+    /** Demo step 5: documents->get(id) — fresh descriptor + 302 to presigned URL. */
     public function get(string $id): RedirectResponse
     {
         $descriptor = PoliPage::documents()->get($id);
@@ -25,7 +25,7 @@ final class DocumentController
         return $this->factory->documentRedirect($descriptor);
     }
 
-    /** Demo step 7: documents->thumbnails(id, opts). */
+    /** Demo step 6: documents->thumbnails(id, opts). */
     public function thumbnails(string $id): JsonResponse
     {
         $thumbnails = PoliPage::documents()->thumbnails($id, new ThumbnailOptions(width: 240));
@@ -42,7 +42,7 @@ final class DocumentController
         ]);
     }
 
-    /** Demo step 8: documents->preview(id). */
+    /** Demo step 7: documents->preview(id). */
     public function preview(string $id): Response
     {
         $result = PoliPage::documents()->preview($id);
@@ -50,7 +50,7 @@ final class DocumentController
         return $this->factory->preview($result);
     }
 
-    /** Demo step 9: documents->delete(id). */
+    /** Demo step 8: documents->delete(id). */
     public function delete(string $id): Response
     {
         PoliPage::documents()->delete($id);
@@ -58,15 +58,14 @@ final class DocumentController
         return new Response('', Response::HTTP_NO_CONTENT);
     }
 
-    /** Demo step 10: error handling — deliberately trigger INVALID_VERSION_FORMAT. */
-    public function badVersion(): JsonResponse
+    /** Demo step 9: error handling — render a template that does not exist (404 TEMPLATE_NOT_FOUND). */
+    public function notFound(): JsonResponse
     {
         try {
-            PoliPage::render()->pdf(new ProjectModeInput(
+            PoliPage::render()->pdf(new RenderInput(
                 project: 'getting-started',
-                template: 'welcome',
+                template: 'does-not-exist',
                 data: [],
-                version: 'not-semver',
             ));
         } catch (PoliPageException $e) {
             $payload = $e->toPayload();

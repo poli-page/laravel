@@ -24,6 +24,9 @@ use Psr\Log\LoggerInterface;
 
 final class PoliPageServiceProvider extends ServiceProvider
 {
+    /** Full-key regex of the SDK contract: pp_{environment}_{32 lowercase hex}. */
+    private const API_KEY_PATTERN = '/^pp_(?=[a-z][a-z0-9-]{0,19}_)[a-z][a-z0-9]*(?:-[a-z0-9]+)*_[0-9a-f]{32}$/';
+
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/poli-page.php', 'poli-page');
@@ -34,6 +37,7 @@ final class PoliPageServiceProvider extends ServiceProvider
             /** @var array<string, mixed> $config */
             $config = $app->make(ConfigRepository::class)->get('poli-page', []);
             self::validate($config);
+            self::warnIfMalformedApiKey($app, (string) $config['api_key']);
 
             /** @var array<string, mixed> $retries */
             $retries = is_array($config['retries'] ?? null) ? $config['retries'] : [];
@@ -89,12 +93,6 @@ final class PoliPageServiceProvider extends ServiceProvider
                 'Poli Page api_key is required. Set POLI_PAGE_API_KEY in your .env file.',
             );
         }
-        if (preg_match('/^pp_(test|live)_/', $apiKey) !== 1) {
-            throw new InvalidArgumentException(
-                'Poli Page API key must start with pp_test_ or pp_live_. '
-                .'Get one at https://app.poli.page/settings/api-keys.',
-            );
-        }
 
         $timeout = $config['timeout'] ?? null;
         if ($timeout !== null) {
@@ -138,6 +136,24 @@ final class PoliPageServiceProvider extends ServiceProvider
                 );
             }
         }
+    }
+
+    /**
+     * Why warn instead of throw: the API is the only authority on keys (it answers
+     * 401 INVALID_API_KEY); a key the regex rejects may still be one it accepts.
+     * The message never echoes the key, so the secret cannot leak into logs.
+     */
+    private static function warnIfMalformedApiKey(Application $app, string $apiKey): void
+    {
+        if (preg_match(self::API_KEY_PATTERN, $apiKey) === 1) {
+            return;
+        }
+
+        $app->make(LoggerInterface::class)->warning(
+            'Poli Page API key does not match the expected format pp_{environment}_{32 lowercase hex characters}. '
+            .'Starting anyway; the API will reject it if it is invalid. '
+            .'Get one at https://app.poli.page/settings/api-keys.',
+        );
     }
 
     private static function buildRetryHook(Application $app, Dispatcher $dispatcher, mixed $userBinding): Closure

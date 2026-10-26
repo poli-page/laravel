@@ -8,7 +8,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use PoliPage\DocumentDescriptor;
 use PoliPage\DocumentPreviewResult;
-use PoliPage\PreviewResult;
 use Psr\Http\Message\StreamInterface;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -50,7 +49,7 @@ final class PoliPageResponseFactory
         return $response;
     }
 
-    public function preview(PreviewResult|DocumentPreviewResult $preview): Response
+    public function preview(DocumentPreviewResult $preview): Response
     {
         return new Response($preview->html, Response::HTTP_OK, [
             'Content-Type' => 'text/html; charset=utf-8',

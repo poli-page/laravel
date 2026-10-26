@@ -8,7 +8,16 @@ All notable changes to `poli-page/laravel` are documented here. Format follows [
 - Initial release scaffolding.
 
 ### Changed
+- API keys follow the environments format `pp_{environment}_{32 lowercase hex}` (`pp_sandbox_…`, `pp_live_…`, `pp_staging_…`). The service provider no longer rejects keys outside the old test/live prefixes: it still throws on a missing or empty `api_key`, and logs one warning through Laravel's logger (without the key) when the key does not match the SDK's full-key regex, then lets the API decide.
+- Requires the `poli-page/sdk` release that drops template versions: renders take a `RenderInput` with no `version`; the key's environment selects the published copy of the project.
+- `PoliPageResponseFactory::preview()` takes a `DocumentPreviewResult` only (the stored HTML of a rendered document).
+- Example app: the error-handling demo is now `GET /api/errors/not-found`, which renders `getting-started` with template `does-not-exist` and answers `404` with code `TEMPLATE_NOT_FOUND`. Demo steps are renumbered 1–9.
+- The integration test runs only with a `pp_sandbox_` key.
 - Supported versions are now Laravel 12.x (Orchestra Testbench 10) and Laravel 13.x (Orchestra Testbench 11) on PHP 8.3–8.5. Laravel 10.x and 11.x are dropped: every release of both is flagged by Packagist security advisories, so Composer refuses to install them. Dev tooling moves to PHPUnit 11.5/12.5, PHPStan 2 and Larastan 3.
+
+### Removed
+- `php artisan poli-page:render`: the `--template-version`, `--preview` and `--html` options. The command renders a PDF from `--project` and `--template`.
+- Example app: `GET /api/render/preview` and its dashboard button, and `GET /api/errors/bad-version`.
 
 ### Fixed
 - `PoliPageResponseFactory::bytes()` / `stream()`: control characters (CR/LF, TAB, DEL, C1) are now stripped from the `Content-Disposition` filename instead of surviving as `?` in the fallback and `%0D%0A` in `filename*`. Filenames containing `/`, `\` or `%` no longer throw `InvalidArgumentException` from `HeaderUtils::makeDisposition()` (a 500): path separators become `_`, and `%` becomes `?` in the ASCII fallback only. The fallback now has one `?` per non-ASCII character (was one per UTF-8 byte), and a filename made only of control characters falls back to `document.pdf`.
