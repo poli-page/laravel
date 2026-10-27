@@ -133,14 +133,24 @@ final class RenderCommandTest extends TestCase
         self::assertStringContainsString('TEMPLATE_NOT_FOUND', Artisan::output());
     }
 
-    public function test_error_output_never_contains_the_api_key(): void
+    /** @return iterable<string, array{0: string}> */
+    public static function headerBreakingSuffixProvider(): iterable
+    {
+        yield 'newline' => ["\n"];
+        // Guzzle trims " \t" before it validates, so its message holds the trimmed key.
+        yield 'newline then space' => ["\n "];
+        yield 'newline then tab' => ["\n\t"];
+    }
+
+    #[DataProvider('headerBreakingSuffixProvider')]
+    public function test_error_output_never_contains_the_api_key(string $suffix): void
     {
         $app = $this->app;
         \assert($app !== null);
 
-        // A trailing newline makes Guzzle's PSR-7 reject the Authorization header
-        // with the whole "Bearer <key>" value in the exception message.
-        $key = self::SANDBOX_API_KEY."\n";
+        // A key ending in a newline makes Guzzle's PSR-7 reject the Authorization
+        // header with the whole "Bearer <key>" value in the exception message.
+        $key = self::SANDBOX_API_KEY.$suffix;
         $app->make(Repository::class)->set('poli-page.api_key', $key);
         $app->make(Repository::class)->set('poli-page.request_factory', HttpFactory::class);
         $app->forgetInstance(PoliPage::class);

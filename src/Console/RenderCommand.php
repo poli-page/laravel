@@ -57,12 +57,17 @@ final class RenderCommand extends Command
     /**
      * Why: a key the HTTP layer rejects (e.g. one ending in a newline) makes
      * PSR-7 throw with the whole "Bearer <key>" header value in its message.
+     * Guzzle trims " \t" from the value first, so the trimmed key is redacted too.
      */
     private function withoutApiKey(string $message): string
     {
         $apiKey = config('poli-page.api_key');
+        if (! is_string($apiKey)) {
+            return $message;
+        }
 
-        return is_string($apiKey) ? str_replace($apiKey, '[redacted API key]', $message) : $message;
+        // str_replace skips an empty search (a key made only of spaces or tabs).
+        return str_replace([$apiKey, rtrim($apiKey, " \t")], '[redacted API key]', $message);
     }
 
     /**
