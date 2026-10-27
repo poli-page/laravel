@@ -7,6 +7,7 @@ namespace PoliPage\Laravel\Tests\Unit\Console;
 use GuzzleHttp\Psr7\HttpFactory;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Support\Facades\Artisan;
+use InvalidArgumentException;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\LegacyMockInterface;
@@ -137,7 +138,7 @@ final class RenderCommandTest extends TestCase
     public static function headerBreakingSuffixProvider(): iterable
     {
         yield 'newline' => ["\n"];
-        // Guzzle trims " \t" before it validates, so its message holds the trimmed key.
+        // Guzzle trims " \t" before it validates, so a leak would hold the trimmed key.
         yield 'newline then space' => ["\n "];
         yield 'newline then tab' => ["\n\t"];
     }
@@ -148,8 +149,9 @@ final class RenderCommandTest extends TestCase
         $app = $this->app;
         \assert($app !== null);
 
-        // A key ending in a newline makes Guzzle's PSR-7 reject the Authorization
-        // header with the whole "Bearer <key>" value in the exception message.
+        // A key ending in a newline is not a valid Authorization header value.
+        // poli-page/sdk 0.10.0 refuses it with a fixed invalid_options message
+        // before Guzzle's PSR-7 (whose error echoes "Bearer <key>") sees it.
         $key = self::SANDBOX_API_KEY.$suffix;
         $app->make(Repository::class)->set('poli-page.api_key', $key);
         $app->make(Repository::class)->set('poli-page.request_factory', HttpFactory::class);
@@ -161,9 +163,37 @@ final class RenderCommandTest extends TestCase
             '--output' => $this->outputPath,
         ]);
 
+        self::assertSame(3, $exitCode);
+        $output = Artisan::output();
+        self::assertStringContainsString('apiKey contains characters that are not allowed in an HTTP header', $output);
+        self::assertStringContainsString('code=invalid_options', $output);
+        self::assertStringNotContainsString('0123456789abcdef0123456789abcdef', $output);
+    }
+
+    #[DataProvider('headerBreakingSuffixProvider')]
+    public function test_other_error_output_never_contains_the_trimmed_api_key(string $suffix): void
+    {
+        $app = $this->app;
+        \assert($app !== null);
+
+        // The error Guzzle's PSR-7 raised for such a key before poli-page/sdk 0.10.0.
+        $key = self::SANDBOX_API_KEY.$suffix;
+        $app->make(Repository::class)->set('poli-page.api_key', $key);
+        $render = $this->mockRender();
+        $render->shouldReceive('pdf')->andThrow(new InvalidArgumentException(
+            '"Bearer '.rtrim($key, " \t").'" is not valid header value',
+        ));
+        $app->instance(PoliPage::class, $this->stubClient($render));
+
+        $exitCode = Artisan::call('poli-page:render', [
+            '--project' => 'getting-started',
+            '--template' => 'welcome',
+            '--output' => $this->outputPath,
+        ]);
+
         self::assertSame(1, $exitCode);
         $output = Artisan::output();
-        self::assertStringContainsString('is not valid header value', $output);
+        self::assertStringContainsString('[redacted API key]', $output);
         self::assertStringNotContainsString('0123456789abcdef0123456789abcdef', $output);
     }
 
