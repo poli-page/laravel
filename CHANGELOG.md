@@ -9,7 +9,7 @@ All notable changes to `poli-page/laravel` are documented here. Format follows [
 
 ### Changed
 - API keys follow the environments format `pp_{environment}_{32 lowercase hex}` (`pp_sandbox_…`, `pp_live_…`, `pp_staging_…`). The service provider no longer rejects keys outside the old test/live prefixes: it still throws on a missing or empty `api_key`, and logs one warning through Laravel's logger (without the key) when the key does not match the SDK's full-key regex, then lets the API decide.
-- Requires the `poli-page/sdk` release that drops template versions: renders take a `RenderInput` with no `version`; the key's environment selects the published copy of the project.
+- Requires `poli-page/sdk` `^0.10.0`, the release that drops template versions: renders take a `RenderInput` with no `version`; the key's environment selects the published copy of the project.
 - `PoliPageResponseFactory::preview()` takes a `DocumentPreviewResult` only (the stored HTML of a rendered document).
 - Example app: the error-handling demo is now `GET /api/errors/not-found`, which renders `getting-started` with template `does-not-exist` and answers `404` with code `TEMPLATE_NOT_FOUND`. Demo steps are renumbered 1–9.
 - The integration test runs only with a `pp_sandbox_` key.

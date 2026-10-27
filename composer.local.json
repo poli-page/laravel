@@ -1,9 +1,0 @@
-{
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/poli-page/sdk-php",
-            "no-api": true
-        }
-    ]
-}

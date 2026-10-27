@@ -7,11 +7,10 @@
         "php": "^8.3",
         "laravel/framework": "^13.0",
         "poli-page/laravel": "@dev",
-        "poli-page/sdk": "dev-main#7e16f75decd85d01c57904cd9ebef0c846bd0bb3"
+        "poli-page/sdk": "^0.10.0"
     },
     "repositories": [
-        { "type": "path", "url": "../", "options": { "symlink": true, "versions": { "poli-page/laravel": "0.1.0" } } },
-        { "type": "vcs", "url": "https://github.com/poli-page/sdk-php", "no-api": true }
+        { "type": "path", "url": "../", "options": { "symlink": true, "versions": { "poli-page/laravel": "0.1.0" } } }
     ],
     "config": {
         "allow-plugins": {
