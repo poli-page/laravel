@@ -49,7 +49,7 @@ Each API key belongs to one environment of your organization and has the form `p
 
 "Counted" means the render counts toward your organization's monthly PDF quota. The key picks the environment, and each render uses the copy of the project published in that environment, so there is no template version to pass.
 
-The package only requires the key to be set. A key that does not match `^pp_(?=[a-z][a-z0-9-]{0,19}_)[a-z][a-z0-9]*(?:-[a-z0-9]+)*_[0-9a-f]{32}$` logs one warning through Laravel's logger when the client is first resolved (the key itself is never logged), and the API answers `401` if it is invalid.
+The package only requires the key to be set. A key that does not match `^pp_(?=[a-z][a-z0-9-]{0,19}_)[a-z][a-z0-9]*(?:-[a-z0-9]+)*_[0-9a-f]{32}\z` logs one warning through Laravel's logger when the client is first resolved (the key itself is never logged), and the API answers `401` if it is invalid.
 
 Publish the config file when you need to override defaults:
 

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PoliPage\Laravel\Tests\Unit\Console;
 
+use GuzzleHttp\Psr7\HttpFactory;
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Support\Facades\Artisan;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
@@ -129,6 +131,53 @@ final class RenderCommandTest extends TestCase
 
         self::assertSame(1, $exitCode, '4xx PoliPageException should exit with code 1');
         self::assertStringContainsString('TEMPLATE_NOT_FOUND', Artisan::output());
+    }
+
+    public function test_error_output_never_contains_the_api_key(): void
+    {
+        $app = $this->app;
+        \assert($app !== null);
+
+        // A trailing newline makes Guzzle's PSR-7 reject the Authorization header
+        // with the whole "Bearer <key>" value in the exception message.
+        $key = self::SANDBOX_API_KEY."\n";
+        $app->make(Repository::class)->set('poli-page.api_key', $key);
+        $app->make(Repository::class)->set('poli-page.request_factory', HttpFactory::class);
+        $app->forgetInstance(PoliPage::class);
+
+        $exitCode = Artisan::call('poli-page:render', [
+            '--project' => 'getting-started',
+            '--template' => 'welcome',
+            '--output' => $this->outputPath,
+        ]);
+
+        self::assertSame(1, $exitCode);
+        $output = Artisan::output();
+        self::assertStringContainsString('is not valid header value', $output);
+        self::assertStringNotContainsString('0123456789abcdef0123456789abcdef', $output);
+    }
+
+    public function test_poli_page_exception_output_never_contains_the_api_key(): void
+    {
+        $app = $this->app;
+        \assert($app !== null);
+
+        $render = $this->mockRender();
+        $render->shouldReceive('pdf')->andThrow(new PoliPageException(
+            'transport failed: Authorization: Bearer '.self::SANDBOX_API_KEY,
+            PoliPageException::NETWORK_ERROR,
+        ));
+        $app->instance(PoliPage::class, $this->stubClient($render));
+
+        Artisan::call('poli-page:render', [
+            '--project' => 'getting-started',
+            '--template' => 'welcome',
+            '--output' => $this->outputPath,
+        ]);
+
+        $output = Artisan::output();
+        self::assertStringContainsString('NETWORK_ERROR', strtoupper($output));
+        self::assertStringNotContainsString(self::SANDBOX_API_KEY, $output);
     }
 
     /**

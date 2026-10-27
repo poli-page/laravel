@@ -24,8 +24,11 @@ use Psr\Log\LoggerInterface;
 
 final class PoliPageServiceProvider extends ServiceProvider
 {
-    /** Full-key regex of the SDK contract: pp_{environment}_{32 lowercase hex}. */
-    private const API_KEY_PATTERN = '/^pp_(?=[a-z][a-z0-9-]{0,19}_)[a-z][a-z0-9]*(?:-[a-z0-9]+)*_[0-9a-f]{32}$/';
+    /**
+     * Full-key regex of the SDK contract: pp_{environment}_{32 lowercase hex}.
+     * Anchored with \z, not $: PHP's $ also matches before a final "\n".
+     */
+    private const API_KEY_PATTERN = '/^pp_(?=[a-z][a-z0-9-]{0,19}_)[a-z][a-z0-9]*(?:-[a-z0-9]+)*_[0-9a-f]{32}\z/';
 
     public function register(): void
     {

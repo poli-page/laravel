@@ -40,7 +40,7 @@ final class RenderCommand extends Command
         } catch (PoliPageException $e) {
             $this->error(sprintf(
                 '%s (status=%s, code=%s, requestId=%s)',
-                $e->getMessage(),
+                $this->withoutApiKey($e->getMessage()),
                 $e->status ?? 'n/a',
                 $e->errorCode,
                 $e->requestId ?? 'n/a',
@@ -48,10 +48,21 @@ final class RenderCommand extends Command
 
             return $this->exitCodeFor($e);
         } catch (Throwable $e) {
-            $this->error($e->getMessage());
+            $this->error($this->withoutApiKey($e->getMessage()));
 
             return self::FAILURE;
         }
+    }
+
+    /**
+     * Why: a key the HTTP layer rejects (e.g. one ending in a newline) makes
+     * PSR-7 throw with the whole "Bearer <key>" header value in its message.
+     */
+    private function withoutApiKey(string $message): string
+    {
+        $apiKey = config('poli-page.api_key');
+
+        return is_string($apiKey) ? str_replace($apiKey, '[redacted API key]', $message) : $message;
     }
 
     /**

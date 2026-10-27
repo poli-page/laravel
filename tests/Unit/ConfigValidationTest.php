@@ -84,6 +84,7 @@ final class ConfigValidationTest extends TestCase
         yield 'double hyphen' => ["pp_a--b_{$hex}", $hex];
         yield '21-character environment' => ["pp_abcdefghijklmnopqrstu_{$hex}", $hex];
         yield 'not a pp_ token' => ['sk_live_secretvalue', 'secretvalue'];
+        yield 'trailing newline' => ["pp_sandbox_{$hex}\n", $hex];
     }
 
     #[DataProvider('malformedApiKeyProvider')]

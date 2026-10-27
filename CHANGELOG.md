@@ -21,6 +21,8 @@ All notable changes to `poli-page/laravel` are documented here. Format follows [
 
 ### Fixed
 - `PoliPageResponseFactory::bytes()` / `stream()`: control characters (CR/LF, TAB, DEL, C1) are now stripped from the `Content-Disposition` filename instead of surviving as `?` in the fallback and `%0D%0A` in `filename*`. Filenames containing `/`, `\` or `%` no longer throw `InvalidArgumentException` from `HeaderUtils::makeDisposition()` (a 500): path separators become `_`, and `%` becomes `?` in the ASCII fallback only. The fallback now has one `?` per non-ASCII character (was one per UTF-8 byte), and a filename made only of control characters falls back to `document.pdf`.
+- A key ending in a newline now logs the malformed-key warning (the format check is anchored with `\z`, not `$`).
+- `php artisan poli-page:render` no longer prints the configured API key in its error output. A key ending in a newline made PSR-7 reject the `Authorization` header with the whole `Bearer <key>` value in the exception message, which the command printed as is.
 
 ## [0.1.0] — TBD
 
