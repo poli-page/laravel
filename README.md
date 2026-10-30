@@ -159,6 +159,7 @@ The package registers an error handler on Laravel's exception handler, on by def
 - The HTTP status is the payload's `status`: the API's status (404, 429, 500, …), `503` for a `network_error` and `504` for a `timeout`. An SDK error with no status (for example `invalid_options`) answers `500`, with `"status": null` in the body.
 - `requestId` is the API's `x-request-id`, or `null` when there is none.
 - The `Content-Type` is `application/json`. Laravel still reports the exception to your log as usual.
+- For a streamed PDF, call `render->pdfStream()` in the controller and pass its stream to `PoliPageResponseFactory::stream()`, which reads the first chunk before it returns. A render or download error then reaches the handler before any PDF header is sent. Calling the SDK inside your own `StreamedResponse` callback would commit a `200 application/pdf` first.
 
 To handle SDK errors yourself, turn it off in `.env`:
 
