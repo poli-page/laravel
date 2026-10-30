@@ -6,7 +6,6 @@ return [
     'api_key' => env('POLI_PAGE_API_KEY'),
     'base_url' => env('POLI_PAGE_BASE_URL'),
     'timeout' => env('POLI_PAGE_TIMEOUT'),
-    'user_agent' => env('POLI_PAGE_USER_AGENT'),
     'retries' => [
         'max_attempts' => env('POLI_PAGE_RETRY_MAX_ATTEMPTS'),
         'delay_seconds' => env('POLI_PAGE_RETRY_DELAY_SECONDS'),

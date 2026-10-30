@@ -107,7 +107,6 @@ class InvoiceController
 | `api_key` | `env('POLI_PAGE_API_KEY')` | Your Poli Page API key, `pp_{environment}_{32 hex}`. Required; a malformed value logs one warning and the API decides. |
 | `base_url` | SDK default | API endpoint. Override for staging or self-hosted. |
 | `timeout` | SDK default | Per-request timeout in seconds. Must be between `0` and `600`. |
-| `user_agent` | SDK default | Custom `User-Agent` header. |
 | `retries.max_attempts` | SDK default | Automatic retries on 429 / 5xx. Must be between `0` and `10`. |
 | `retries.delay_seconds` | SDK default | Base delay between retries. Must be between `0` and `30`. |
 | `http_client` | `null` | Container key of a PSR-18 `ClientInterface` binding. |
@@ -144,7 +143,7 @@ return [
 | `PoliPage\Laravel\Events\PoliPageErrored` | Laravel event dispatched on terminal SDK errors. Wraps the underlying `PoliPageException`. |
 | `php artisan poli-page:render` | End-to-end smoke-test command. Renders a template to a PDF file. |
 
-Full reference: [docs/api.md](docs/api.md).
+Full reference: [docs.poli.page](https://docs.poli.page).
 
 ## Errors
 

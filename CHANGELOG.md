@@ -6,6 +6,8 @@ All notable changes to `poli-page/laravel` are documented here. Format follows [
 
 ## [0.11.0] - 2026-10-30
 
+First release on Packagist. The 0.1.0 development line was never published; the Changed, Removed and Fixed entries below describe changes made during that line.
+
 ### Added
 - `PoliPageServiceProvider` with singleton container binding, config validation, publishable `config/poli-page.php`.
 - `PoliPage` Facade exposing `render()` / `documents()` methods over the SDK's readonly properties.
