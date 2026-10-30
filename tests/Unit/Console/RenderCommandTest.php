@@ -150,7 +150,7 @@ final class RenderCommandTest extends TestCase
         \assert($app !== null);
 
         // A key ending in a newline is not a valid Authorization header value.
-        // poli-page/sdk 0.10.0 refuses it with a fixed invalid_options message
+        // poli-page/sdk 0.11.0 refuses it with a fixed invalid_options message
         // before Guzzle's PSR-7 (whose error echoes "Bearer <key>") sees it.
         $key = self::SANDBOX_API_KEY.$suffix;
         $app->make(Repository::class)->set('poli-page.api_key', $key);
@@ -176,7 +176,7 @@ final class RenderCommandTest extends TestCase
         $app = $this->app;
         \assert($app !== null);
 
-        // The error Guzzle's PSR-7 raised for such a key before poli-page/sdk 0.10.0.
+        // The error Guzzle's PSR-7 raised for such a key with older poli-page/sdk releases.
         $key = self::SANDBOX_API_KEY.$suffix;
         $app->make(Repository::class)->set('poli-page.api_key', $key);
         $render = $this->mockRender();

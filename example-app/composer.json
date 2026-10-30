@@ -7,7 +7,7 @@
         "php": "^8.3",
         "laravel/framework": "^13.0",
         "poli-page/laravel": "@dev",
-        "poli-page/sdk": "^0.10.0"
+        "poli-page/sdk": "^0.11.0"
     },
     "repositories": [
         { "type": "path", "url": "../", "options": { "symlink": true, "versions": { "poli-page/laravel": "0.1.0" } } }
