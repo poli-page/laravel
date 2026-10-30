@@ -26,42 +26,38 @@ jobs:
           coverage: none
       - name: Pin Laravel + Testbench
         working-directory: laravel
-        run: |
-          if [ -f composer.json ]; then
-            composer require "illuminate/contracts:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-update --no-interaction
-          fi
+        run: composer require "illuminate/contracts:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-update --no-interaction
       - name: Install
         working-directory: laravel
-        run: |
-          if [ -f composer.json ]; then
-            composer update --prefer-dist --no-progress
-          else
-            echo "Skipping install: no composer.json yet"
-          fi
+        run: composer update --prefer-dist --no-progress
       - name: Lint
         working-directory: laravel
-        run: |
-          if [ -f pint.json ]; then
-            vendor/bin/pint --test
-          else
-            echo "Skipping lint: no pint.json yet"
-          fi
+        run: vendor/bin/pint --test
       - name: Static analysis
         working-directory: laravel
-        run: |
-          if [ -f phpstan.neon ]; then
-            vendor/bin/phpstan analyse --memory-limit=512M
-          else
-            echo "Skipping phpstan: no phpstan.neon yet"
-          fi
+        run: vendor/bin/phpstan analyse --memory-limit=512M
+      - name: API contract
+        id: contract
+        uses: poli-page/api-contract@0eba96c1ecf9a28b7e259f444f3ca5b7c059d5fd # v1.3.0
       - name: Unit tests
         working-directory: laravel
+        env:
+          POLI_CONTRACT: ${{ steps.contract.outputs.path }}
+        run: vendor/bin/phpunit --testsuite=unit
+      - name: Contract tests
+        working-directory: laravel
+        env:
+          POLI_CONTRACT: ${{ steps.contract.outputs.path }}
+        run: vendor/bin/phpunit --testsuite=contract
+      - name: Build the example app
+        if: matrix.laravel == '13.*'
+        working-directory: laravel/example-app
+        env:
+          # route:list builds the controllers, which need a client; nothing is sent.
+          POLI_PAGE_API_KEY: pp_sandbox_0123456789abcdef0123456789abcdef
         run: |
-          if [ -d tests/Unit ] && [ -n "$(ls -A tests/Unit 2>/dev/null)" ]; then
-            vendor/bin/phpunit --testsuite=unit
-          else
-            echo "Skipping tests: no tests/Unit yet"
-          fi
+          composer update --prefer-dist --no-progress
+          php artisan route:list --path=errors
 
   integration:
     runs-on: ubuntu-latest
