@@ -31,7 +31,7 @@ Open `http://localhost:8000/` in your browser. Single-page dashboard: one button
 | 6. `documents->thumbnails(id)` | `GET /documents/{id}/thumbnails` | Page thumbnails as base64 JSON. |
 | 7. `documents->preview(id)` | `GET /documents/{id}/preview` | Stored document's HTML preview. |
 | 8. `documents->delete(id)` | `DELETE /documents/{id}` | Soft-delete, `204 No Content`. |
-| 9. Error handling | `GET /errors/not-found` | Renders `getting-started` with template `does-not-exist`; answers `404` with code `TEMPLATE_NOT_FOUND` and the error's `code`, `status`, `message` and `requestId`. |
+| 9. Error handling | `GET /errors/not-found` | Renders `getting-started` with template `does-not-exist`. The package's error handler answers `404` with the error's `toPayload()` body: `code` (`TEMPLATE_NOT_FOUND`), `message`, `status` and `requestId`. |
 
 ## Commands
 

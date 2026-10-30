@@ -25,6 +25,7 @@ This package wraps the Poli Page PHP SDK as a Laravel-native integration: a serv
 
 - PHP 8.3+
 - Laravel 12.x or 13.x
+- [`poli-page/sdk`](https://packagist.org/packages/poli-page/sdk) 0.11.0 or later (Composer installs it with the package)
 - A Poli Page API key from [app.poli.page](https://app.poli.page)
 
 ## Install
@@ -115,6 +116,7 @@ class InvoiceController
 | `logger` | `null` | Container key of a PSR-3 `LoggerInterface` binding. |
 | `on_retry` | `null` | Container key of a callable. When set, replaces the default `PoliPageRetrying` event bridge. |
 | `on_error` | `null` | Container key of a callable. When set, replaces the default `PoliPageErrored` event bridge. |
+| `error_handler` | `env('POLI_PAGE_ERROR_HANDLER', true)` | Answers an uncaught `PoliPageException` with its `toPayload()` JSON body and status (see [Errors](#errors)). Set to `false` to let your app handle it. |
 
 Every optional key is `null` by default and the SDK applies its own defaults. Override individual values through env vars or by editing the published config:
 
@@ -146,7 +148,29 @@ Full reference: [docs/api.md](docs/api.md).
 
 ## Errors
 
-The SDK throws four families of exceptions. They all extend `PoliPage\PoliPageException`; this package does not catch or transform them.
+### Error handler
+
+The package registers an error handler on Laravel's exception handler, on by default. A `PoliPage\PoliPageException` that your code does not catch becomes a JSON answer built from the SDK's `toPayload()`:
+
+```json
+{ "code": "TEMPLATE_NOT_FOUND", "message": "Template 'does-not-exist' not found in project 'getting-started'.", "status": 404, "requestId": "req_…" }
+```
+
+- The HTTP status is the payload's `status`: the API's status (404, 429, 500, …), `503` for a `network_error` and `504` for a `timeout`. An SDK error with no status (for example `invalid_options`) answers `500`, with `"status": null` in the body.
+- `requestId` is the API's `x-request-id`, or `null` when there is none.
+- The `Content-Type` is `application/json`. Laravel still reports the exception to your log as usual.
+
+To handle SDK errors yourself, turn it off in `.env`:
+
+```
+POLI_PAGE_ERROR_HANDLER=false
+```
+
+or with `'error_handler' => false` in `config/poli-page.php`. A `render()` callback you register for `PoliPageException` in `bootstrap/app.php` also takes precedence when it returns a response.
+
+### Exception types
+
+The SDK throws four families of exceptions. They all extend `PoliPage\PoliPageException`. Catch them where you want a different answer than the error handler's:
 
 - **Auth** — `PoliPage\Exception\AuthenticationException`. Invalid or missing API key (HTTP 401).
 - **Rate limit** — `PoliPage\Exception\RateLimitException`. Rate limit exceeded (HTTP 429); honor `Retry-After`.
@@ -179,7 +203,7 @@ try {
 
 ## Example app
 
-A runnable Laravel 13 app at [`example-app/`](example-app/) demonstrates every public SDK method through routes, an interactive single-page dashboard at `GET /`, and an `app:demo:render-to-file` command.
+A runnable Laravel 13 app at [`example-app/`](example-app/) demonstrates every public SDK method through routes (`GET /render/pdf`, `GET /documents/{id}`, `GET /errors/not-found`, …), an interactive single-page dashboard at `GET /`, and an `app:demo:render-to-file` command.
 
 ```bash
 cd example-app
@@ -204,7 +228,20 @@ The package follows Laravel's own supported-versions window and tracks the lates
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+```bash
+composer install
+composer ci            # Pint, PHPStan and the unit tests
+```
+
+### Contract tests
+
+`tests/Contract/ImplContractTest.php` runs the integration cases of the Poli Page API contract (`impl.*` in [poli-page/api-contract](https://github.com/poli-page/api-contract)) against the example app, with its SDK pointed at a local mock API. CI runs them against the contract version pinned in `.github/workflows/ci.yml`. Locally:
+
+```bash
+POLI_CONTRACT=/path/to/contract.json vendor/bin/phpunit --testsuite=contract
+```
+
+Without `POLI_CONTRACT` the suite is skipped (it fails when `CI` is set). A case that must fail for now goes in `tests/contract-skip.json` with its reason.
 
 ## License
 
