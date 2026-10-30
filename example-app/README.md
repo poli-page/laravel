@@ -24,14 +24,14 @@ Open `http://localhost:8000/` in your browser. Single-page dashboard: one button
 
 | SDK demo step | URL | What it does |
 |---|---|---|
-| 1. `render->pdf()` | `GET /api/render/pdf` | Returns the welcome PDF as `application/pdf`. |
-| 2. `render->pdfStream()` | `GET /api/render/stream` | Same PDF but via PSR-7 stream + `StreamedResponse`. |
-| 4. `render->document()` | `POST /api/documents` | Stores the document, returns descriptor JSON. |
-| 5. `documents->get(id)` | `GET /api/documents/{id}` | 302 to the presigned PDF URL. |
-| 6. `documents->thumbnails(id)` | `GET /api/documents/{id}/thumbnails` | Page thumbnails as base64 JSON. |
-| 7. `documents->preview(id)` | `GET /api/documents/{id}/preview` | Stored document's HTML preview. |
-| 8. `documents->delete(id)` | `DELETE /api/documents/{id}` | Soft-delete, `204 No Content`. |
-| 9. Error handling | `GET /api/errors/not-found` | Renders `getting-started` with template `does-not-exist`; answers `404` with code `TEMPLATE_NOT_FOUND` and the error's `code`, `status`, `message` and `requestId`. |
+| 1. `render->pdf()` | `GET /render/pdf` | Returns the welcome PDF as `application/pdf`. |
+| 2. `render->pdfStream()` | `GET /render/stream` | Same PDF but via PSR-7 stream + `StreamedResponse`. |
+| 4. `render->document()` | `POST /documents` | Stores the document, returns descriptor JSON. |
+| 5. `documents->get(id)` | `GET /documents/{id}` | 302 to the presigned PDF URL. |
+| 6. `documents->thumbnails(id)` | `GET /documents/{id}/thumbnails` | Page thumbnails as base64 JSON. |
+| 7. `documents->preview(id)` | `GET /documents/{id}/preview` | Stored document's HTML preview. |
+| 8. `documents->delete(id)` | `DELETE /documents/{id}` | Soft-delete, `204 No Content`. |
+| 9. Error handling | `GET /errors/not-found` | Renders `getting-started` with template `does-not-exist`; answers `404` with code `TEMPLATE_NOT_FOUND` and the error's `code`, `status`, `message` and `requestId`. |
 
 ## Commands
 
@@ -43,7 +43,7 @@ Open `http://localhost:8000/` in your browser. Single-page dashboard: one button
 ## Quick smoke
 
 ```bash
-curl -o welcome.pdf http://localhost:8000/api/render/pdf
+curl -o welcome.pdf http://localhost:8000/render/pdf
 open welcome.pdf
 ```
 

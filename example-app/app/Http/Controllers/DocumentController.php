@@ -9,7 +9,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use PoliPage\Laravel\Facades\PoliPage;
 use PoliPage\Laravel\Http\PoliPageResponseFactory;
-use PoliPage\PoliPageException;
 use PoliPage\RenderInput;
 use PoliPage\ThumbnailOptions;
 
@@ -58,28 +57,19 @@ final class DocumentController
         return new Response('', Response::HTTP_NO_CONTENT);
     }
 
-    /** Demo step 9: error handling — render a template that does not exist (404 TEMPLATE_NOT_FOUND). */
-    public function notFound(): JsonResponse
+    /**
+     * Demo step 9: error handling. Renders a template that does not exist; the
+     * API answers 404 TEMPLATE_NOT_FOUND and the package's error handler turns
+     * the uncaught PoliPageException into its toPayload() body with status 404.
+     */
+    public function notFound(): Response
     {
-        try {
-            PoliPage::render()->pdf(new RenderInput(
-                project: 'getting-started',
-                template: 'does-not-exist',
-                data: [],
-            ));
-        } catch (PoliPageException $e) {
-            $payload = $e->toPayload();
-            $status = $payload['status'] ?? 500;
+        $pdf = PoliPage::render()->pdf(new RenderInput(
+            project: 'getting-started',
+            template: 'does-not-exist',
+            data: [],
+        ));
 
-            return new JsonResponse([
-                'caught' => true,
-                'code' => $payload['code'],
-                'message' => $payload['message'],
-                'status' => $status,
-                'requestId' => $payload['requestId'],
-            ], $status);
-        }
-
-        return new JsonResponse(['caught' => false, 'note' => 'expected an exception, got success'], 500);
+        return $this->factory->bytes($pdf, 'does-not-exist.pdf');
     }
 }
