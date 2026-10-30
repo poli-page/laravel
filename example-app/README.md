@@ -10,7 +10,11 @@ composer install
 php artisan serve
 ```
 
-The example app reads `POLI_PAGE_API_KEY` (a `pp_sandbox_…` key) and, optionally, `POLI_PAGE_BASE_URL` from the workspace root `.env` (`../../symfony-bundle/.env`) automatically. The demo renders the `getting-started` project's `welcome` template, which every organization has in its `sandbox` environment. **No `cp .env .env.local` step required.** Set the key once in that shared file and every integration's example-app picks it up.
+The example app reads `POLI_PAGE_API_KEY` (a `pp_sandbox_…` key) and, optionally, `POLI_PAGE_BASE_URL` from the environment or from `example-app/.env` (Laravel loads it; it is gitignored). The demo renders the `getting-started` project's `welcome` template, which every organization has in its `sandbox` environment. If your organization renamed, deleted or unpublished that project, the demo answers `404 PROJECT_NOT_FOUND` or `404 PROJECT_NOT_IN_ENVIRONMENT`: use a fresh organization.
+
+```bash
+echo 'POLI_PAGE_API_KEY=pp_sandbox_…' > .env
+```
 
 ## The interactive demo
 
