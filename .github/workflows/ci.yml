@@ -24,7 +24,7 @@ jobs:
           - laravel: '13.*'
             testbench: '11.*'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { path: laravel }
       - uses: shivammathur/setup-php@v2
         with:
@@ -81,7 +81,7 @@ jobs:
               echo "present=false" >> "$GITHUB_OUTPUT"
               ;;
           esac
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: steps.key.outputs.present == 'true'
         with: { path: laravel }
       - uses: shivammathur/setup-php@v2
