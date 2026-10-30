@@ -27,10 +27,17 @@ final class PoliPageResponseFactory
 
     public function stream(StreamInterface $stream, string $filename = 'document.pdf', bool $inline = false): StreamedResponse
     {
-        $response = new StreamedResponse(function () use ($stream): void {
-            if ($stream->isSeekable()) {
-                $stream->rewind();
-            }
+        if ($stream->isSeekable()) {
+            $stream->rewind();
+        }
+        // Why: the first read happens here, before any header is sent, so a
+        // download error (DOWNLOAD_FAILED, network_error) reaches the error
+        // handler, which answers JSON instead of a PDF response with no body.
+        $first = $stream->eof() ? '' : $stream->read(8192);
+
+        $response = new StreamedResponse(function () use ($stream, $first): void {
+            echo $first;
+            flush();
             while (! $stream->eof()) {
                 echo $stream->read(8192);
                 flush();

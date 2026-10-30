@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PoliPage\Laravel\Tests\Unit\Http;
 
+use GuzzleHttp\Psr7\PumpStream;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Foundation\Application;
 use Illuminate\Routing\Router;
@@ -12,8 +13,10 @@ use Orchestra\Testbench\Attributes\DefineEnvironment;
 use PoliPage\Exception\ConnectionException;
 use PoliPage\Exception\NotFoundException;
 use PoliPage\Exception\TimeoutException;
+use PoliPage\Laravel\Http\PoliPageResponseFactory;
 use PoliPage\Laravel\Tests\TestCase;
 use PoliPage\PoliPageException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class ErrorHandlerTest extends TestCase
 {
@@ -26,6 +29,12 @@ final class ErrorHandlerTest extends TestCase
     {
         $router->get('/throws', static function (): never {
             throw self::$toThrow ?? new LogicException('no exception set');
+        });
+        // A streamed PDF whose download fails on its first read.
+        $router->get('/stream-fails', static function (PoliPageResponseFactory $factory): StreamedResponse {
+            return $factory->stream(new PumpStream(static function (): never {
+                throw self::$toThrow ?? new LogicException('no exception set');
+            }), 'report.pdf');
         });
     }
 
@@ -100,6 +109,23 @@ final class ErrorHandlerTest extends TestCase
         self::assertSame([
             'code' => 'invalid_options',
             'message' => 'apiKey is required',
+            'status' => null,
+            'requestId' => null,
+        ], $response->json());
+    }
+
+    public function test_a_stream_whose_first_read_fails_answers_json_without_pdf_headers(): void
+    {
+        self::$toThrow = new PoliPageException('Failed to download PDF: network error', PoliPageException::DOWNLOAD_FAILED);
+
+        $response = $this->get('/stream-fails');
+
+        $response->assertStatus(500);
+        self::assertSame('application/json', $response->headers->get('Content-Type'));
+        self::assertNull($response->headers->get('Content-Disposition'));
+        self::assertSame([
+            'code' => 'DOWNLOAD_FAILED',
+            'message' => 'Failed to download PDF: network error',
             'status' => null,
             'requestId' => null,
         ], $response->json());

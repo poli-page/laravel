@@ -24,6 +24,7 @@ All notable changes to `poli-page/laravel` are documented here. Format follows [
 - Example app: `GET /api/render/preview` and its dashboard button, and `GET /api/errors/bad-version`.
 
 ### Fixed
+- `PoliPageResponseFactory::stream()` reads the first chunk before it returns, so a download that fails on its first read (`DOWNLOAD_FAILED`, `network_error`) reaches the error handler and answers its JSON payload, instead of a `200` with PDF headers and no body.
 - Example app: `bootstrap/cache` and `storage/framework/views` are in the repository, so `php artisan` and the demo page work in a fresh clone.
 - `PoliPageResponseFactory::bytes()` / `stream()`: control characters (CR/LF, TAB, DEL, C1) are now stripped from the `Content-Disposition` filename instead of surviving as `?` in the fallback and `%0D%0A` in `filename*`. Filenames containing `/`, `\` or `%` no longer throw `InvalidArgumentException` from `HeaderUtils::makeDisposition()` (a 500): path separators become `_`, and `%` becomes `?` in the ASCII fallback only. The fallback now has one `?` per non-ASCII character (was one per UTF-8 byte), and a filename made only of control characters falls back to `document.pdf`.
 - A key ending in a newline now logs the malformed-key warning (the format check is anchored with `\z`, not `$`).
