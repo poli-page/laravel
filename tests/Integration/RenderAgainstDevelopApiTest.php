@@ -23,10 +23,6 @@ final class RenderAgainstDevelopApiTest extends TestCase
         $key = (string) getenv('POLI_PAGE_API_KEY');
         $config = $app->make(Repository::class);
         $config->set('poli-page.api_key', $key !== '' ? $key : self::SANDBOX_API_KEY);
-        $testBaseUrl = getenv('POLI_PAGE_TEST_BASE_URL');
-        if (is_string($testBaseUrl) && $testBaseUrl !== '') {
-            $config->set('poli-page.base_url', $testBaseUrl);
-        }
         $config->set('poli-page.timeout', 30.0);
     }
 
@@ -38,7 +34,7 @@ final class RenderAgainstDevelopApiTest extends TestCase
         // PHPUnit 11.5+ flags the test as risky on a clean CI without secrets.
         $key = getenv('POLI_PAGE_API_KEY');
         if ($key === false || $key === '') {
-            self::markTestSkipped('POLI_PAGE_API_KEY not set; skipping develop-API integration test.');
+            self::markTestSkipped('POLI_PAGE_API_KEY not set; skipping the live API integration test.');
         }
         if (! str_starts_with($key, 'pp_sandbox_')) {
             self::markTestSkipped('POLI_PAGE_API_KEY must be a pp_sandbox_ key; refusing to run the integration test in a counted environment.');

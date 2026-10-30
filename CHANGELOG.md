@@ -11,6 +11,7 @@ All notable changes to `poli-page/laravel` are documented here. Format follows [
 - Dependabot for Composer (the package and the example app) and GitHub Actions; the API contract has its own group and no cooldown.
 
 ### Changed
+- CI: the live API job runs on `main` (and on demand) against the production API with the sandbox key from the `POLI_PAGE_API_KEY` secret, and skips with a notice when the key is absent or not a `pp_sandbox_` key.
 - API keys follow the environments format `pp_{environment}_{32 lowercase hex}` (`pp_sandbox_…`, `pp_live_…`, `pp_staging_…`). The service provider no longer rejects keys outside the old test/live prefixes: it still throws on a missing or empty `api_key`, and logs one warning through Laravel's logger (without the key) when the key does not match the SDK's full-key regex, then lets the API decide.
 - Requires `poli-page/sdk` `^0.11.0` from Packagist, the first release with environment keys and without template versions: renders take a `RenderInput` with no `version`; the key's environment selects the published copy of the project.
 - `PoliPageResponseFactory::preview()` takes a `DocumentPreviewResult` only (the stored HTML of a rendered document).
