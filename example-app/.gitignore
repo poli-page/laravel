@@ -1,5 +1,11 @@
 /vendor/
 /composer.lock
-/storage/
-/bootstrap/cache/
+/storage/*
+!/storage/framework/
+/storage/framework/*
+!/storage/framework/views/
+/storage/framework/views/*
+!/storage/framework/views/.gitignore
+/bootstrap/cache/*
+!/bootstrap/cache/.gitignore
 .env.local
