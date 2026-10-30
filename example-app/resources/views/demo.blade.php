@@ -400,15 +400,13 @@
     <div class="head">
       <h2>Render <span class="label">01 · instant</span></h2>
       <p class="desc">
-        Three SDK entry points for rendering the <code>getting-started/welcome</code> template:
-        binary PDF (<code>render-&gt;pdf</code>), streamed PDF (<code>render-&gt;pdfStream</code>),
-        and HTML preview (<code>render-&gt;preview</code>).
+        Two SDK entry points for rendering the <code>getting-started/welcome</code> template:
+        binary PDF (<code>render-&gt;pdf</code>) and streamed PDF (<code>render-&gt;pdfStream</code>).
       </p>
     </div>
     <div class="actions">
       <button class="run" data-action="pdf"     data-target="r1">Render PDF</button>
       <button class="run" data-action="stream"  data-target="r1">Via stream</button>
-      <button class="run" data-action="preview" data-target="r1">HTML preview</button>
     </div>
     <div class="result" id="r1">
       <div class="pane-label"><span>output</span><span class="meta">idle</span></div>
@@ -462,13 +460,13 @@
     <div class="head">
       <h2>Error handling <span class="label">04 · typed exceptions</span></h2>
       <p class="desc">
-        Sends a deliberately malformed version string to trigger
-        <code>INVALID_VERSION_FORMAT</code>. The package's typed exceptions propagate the
-        API code, message, and request-id straight through.
+        Renders the template <code>does-not-exist</code> of <code>getting-started</code> to trigger
+        a <code>404</code> with code <code>TEMPLATE_NOT_FOUND</code>. The package's typed exceptions
+        propagate the API code, status, message, and request-id straight through.
       </p>
     </div>
     <div class="actions">
-      <button class="run" data-action="bad-version" data-target="r4">Trigger 400</button>
+      <button class="run" data-action="not-found" data-target="r4">Trigger 404</button>
     </div>
     <div class="result" id="r4">
       <div class="pane-label"><span>output</span><span class="meta">idle</span></div>
@@ -489,9 +487,9 @@
       <span class="prompt">$</span>php artisan app:demo:render-to-file
     </div>
     <div class="cli">
-      <button class="copy" data-copy="php artisan poli-page:render --project=getting-started --template=welcome --template-version=1.0.0 --output=/tmp/smoke.pdf">Copy</button>
+      <button class="copy" data-copy="php artisan poli-page:render --project=getting-started --template=welcome --output=/tmp/smoke.pdf">Copy</button>
       <span class="prompt">$</span>php artisan poli-page:render --project=getting-started \
-        --template=welcome --template-version=1.0.0 --output=/tmp/smoke.pdf
+        --template=welcome --output=/tmp/smoke.pdf
     </div>
   </section>
 
@@ -564,64 +562,58 @@
 
   const actions = {
     pdf: async target => {
-      const r = await fetch('/api/render/pdf');
+      const r = await fetch('/render/pdf');
       if (!r.ok) return renderError(target, `HTTP ${r.status}`);
       const blob = await r.blob();
       renderIframe(target, URL.createObjectURL(blob), 'pdf', `${blob.size.toLocaleString()} bytes`);
     },
     stream: async target => {
-      const r = await fetch('/api/render/stream');
+      const r = await fetch('/render/stream');
       if (!r.ok) return renderError(target, `HTTP ${r.status}`);
       const blob = await r.blob();
       renderIframe(target, URL.createObjectURL(blob), 'pdf (stream)', `${blob.size.toLocaleString()} bytes`);
     },
-    preview: async target => {
-      const r = await fetch('/api/render/preview');
-      const html = await r.text();
-      if (!r.ok) return renderError(target, `HTTP ${r.status}`);
-      renderInlineHtml(target, html, 'html preview', `${html.length.toLocaleString()} chars`);
-    },
     'doc-create': async target => {
-      const r = await fetch('/api/documents', { method: 'POST' });
+      const r = await fetch('/documents', { method: 'POST' });
       const body = await r.text();
       renderJson(target, r.status, body, 'document descriptor');
       if (r.ok) { try { setDocId(JSON.parse(body).documentId); } catch {} }
     },
     'doc-get': async target => {
       if (!state.docId) return;
-      // Why: /api/documents/{id} returns a 302 to a presigned S3 URL. Fetching
+      // Why: /documents/{id} returns a 302 to a presigned S3 URL. Fetching
       // and following the redirect from JS hits CORS (S3 doesn't expose
       // Access-Control-Allow-Origin). An <iframe> navigation isn't a fetch,
       // so the browser follows the redirect natively without CORS.
-      renderIframe(target, `/api/documents/${state.docId}`, 'stored pdf', 'served via 302 → presigned S3 URL');
+      renderIframe(target, `/documents/${state.docId}`, 'stored pdf', 'served via 302 → presigned S3 URL');
     },
     'doc-preview': async target => {
       if (!state.docId) return;
-      const r = await fetch(`/api/documents/${state.docId}/preview`);
+      const r = await fetch(`/documents/${state.docId}/preview`);
       const html = await r.text();
       if (!r.ok) return renderError(target, `HTTP ${r.status}`);
       renderInlineHtml(target, html, 'stored html preview', `${html.length.toLocaleString()} chars`);
     },
     'doc-thumbnails': async target => {
       if (!state.docId) return;
-      const r = await fetch(`/api/documents/${state.docId}/thumbnails`);
+      const r = await fetch(`/documents/${state.docId}/thumbnails`);
       const body = await r.text();
       renderJson(target, r.status, body, 'thumbnails');
     },
     'doc-delete': async target => {
       if (!state.docId) return;
-      const r = await fetch(`/api/documents/${state.docId}`, { method: 'DELETE' });
+      const r = await fetch(`/documents/${state.docId}`, { method: 'DELETE' });
       const body = await r.text();
       renderJson(target, r.status, body || '"(204 No Content)"', 'delete');
       if (r.ok) setDocId(null);
     },
     'render-file': async target => {
-      const r = await fetch('/api/render/file', { method: 'POST' });
+      const r = await fetch('/render/file', { method: 'POST' });
       const body = await r.text();
       renderJson(target, r.status, body, 'wrote to disk');
     },
-    'bad-version': async target => {
-      const r = await fetch('/api/errors/bad-version');
+    'not-found': async target => {
+      const r = await fetch('/errors/not-found');
       const body = await r.text();
       renderJson(target, r.status, body, 'error payload');
     },

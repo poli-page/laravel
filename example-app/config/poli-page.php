@@ -17,4 +17,6 @@ return [
     'logger' => null,
     'on_retry' => null,
     'on_error' => null,
+    // Answers an uncaught PoliPageException with its toPayload() body and status.
+    'error_handler' => env('POLI_PAGE_ERROR_HANDLER', true),
 ];

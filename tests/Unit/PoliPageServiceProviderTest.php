@@ -41,7 +41,7 @@ final class PoliPageServiceProviderTest extends TestCase
         \assert($app !== null);
 
         $config = $app->make(Repository::class);
-        $config->set('poli-page.api_key', 'pp_test_custom_key');
+        $config->set('poli-page.api_key', 'pp_sandbox_fedcba9876543210fedcba9876543210');
         $config->set('poli-page.base_url', 'https://api.example.com');
         $config->set('poli-page.timeout', 42.0);
         $config->set('poli-page.retries.max_attempts', 5);
@@ -54,7 +54,7 @@ final class PoliPageServiceProviderTest extends TestCase
         $client = $app->make(PoliPage::class);
 
         $reflection = new ReflectionClass($client);
-        self::assertSame('pp_test_custom_key', $reflection->getProperty('apiKey')->getValue($client));
+        self::assertSame('pp_sandbox_fedcba9876543210fedcba9876543210', $reflection->getProperty('apiKey')->getValue($client));
         self::assertSame('https://api.example.com', $reflection->getProperty('baseUrl')->getValue($client));
         self::assertSame(42.0, $reflection->getProperty('defaultTimeout')->getValue($client));
         self::assertSame(5, $reflection->getProperty('maxRetries')->getValue($client));
