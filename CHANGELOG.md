@@ -4,8 +4,16 @@ All notable changes to `poli-page/laravel` are documented here. Format follows [
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-30
+
 ### Added
-- Initial release scaffolding.
+- `PoliPageServiceProvider` with singleton container binding, config validation, publishable `config/poli-page.php`.
+- `PoliPage` Facade exposing `render()` / `documents()` methods over the SDK's readonly properties.
+- `PoliPageResponseFactory` with `bytes` / `stream` / `preview` / `documentRedirect` builders (correct PDF/HTML headers, RFC 5987 filename encoding, `Cache-Control: private, no-store`).
+- `php artisan poli-page:render` command for end-to-end smoke testing.
+- Laravel event bridges for the SDK's `onRetry` / `onError` Closure hooks (`PoliPageRetrying`, `PoliPageErrored`).
+- Package auto-discovery via `composer.json` `extra.laravel`.
+- Example Laravel 13 app at `example-app/` with interactive single-page demo UI at `GET /` covering the SDK demo steps.
 - Error handler, on by default: an uncaught `PoliPageException` answers its `toPayload()` body, `{ "code", "message", "status", "requestId" }`, as `application/json` with the payload's status (`503` for `network_error`, `504` for `timeout`, `500` when the SDK knows no status). Turn it off with `POLI_PAGE_ERROR_HANDLER=false` or `'error_handler' => false` in `config/poli-page.php`.
 - Contract tests: CI runs the integration cases of the Poli Page API contract v1.3.0 (`poli-page/api-contract`) against the example app on every matrix leg, and builds the example app.
 - Dependabot for Composer (the package and the example app) and GitHub Actions; the API contract has its own group and no cooldown.
@@ -31,16 +39,5 @@ All notable changes to `poli-page/laravel` are documented here. Format follows [
 - A key ending in a newline now logs the malformed-key warning (the format check is anchored with `\z`, not `$`).
 - `php artisan poli-page:render` no longer prints the configured API key in its error output. A key ending in a newline made PSR-7 reject the `Authorization` header with the whole `Bearer <key>` value in the exception message, which the command printed as is. Guzzle trims spaces and tabs from the value first, so the trimmed key is redacted too.
 
-## [0.1.0] — TBD
-
-### Added
-- `PoliPageServiceProvider` with singleton container binding, config validation, publishable `config/poli-page.php`.
-- `PoliPage` Facade exposing `render()` / `documents()` methods over the SDK's readonly properties.
-- `PoliPageResponseFactory` with `bytes` / `stream` / `preview` / `documentRedirect` builders (correct PDF/HTML headers, RFC 5987 filename encoding, `Cache-Control: private, no-store`).
-- `php artisan poli-page:render` command for end-to-end smoke testing.
-- Laravel event bridges for the SDK's `onRetry` / `onError` Closure hooks (`PoliPageRetrying`, `PoliPageErrored`).
-- Package auto-discovery via `composer.json` `extra.laravel`.
-- Example Laravel 13 app at `example-app/` with interactive single-page demo UI at `GET /` covering all 10 SDK demo steps.
-
-[Unreleased]: https://github.com/poli-page/laravel/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/poli-page/laravel/releases/tag/v0.1.0
+[Unreleased]: https://github.com/poli-page/laravel/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/poli-page/laravel/releases/tag/v0.11.0

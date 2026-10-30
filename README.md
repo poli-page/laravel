@@ -223,7 +223,7 @@ php artisan serve
 
 | Package | Laravel | PHP |
 |---|---|---|
-| 0.1.x | 12.x / 13.x | 8.3 / 8.4 / 8.5 |
+| 0.11.x | 12.x / 13.x | 8.3 / 8.4 / 8.5 |
 
 The package follows Laravel's own supported-versions window and tracks the latest stable PHP minor.
 

@@ -5,6 +5,12 @@
     "license": "MIT",
     "keywords": ["pdf", "html", "template", "rendering", "poli-page", "laravel"],
     "homepage": "https://github.com/poli-page/laravel",
+    "authors": [
+        {
+            "name": "Poli Page",
+            "homepage": "https://poli.page"
+        }
+    ],
     "support": {
         "issues": "https://github.com/poli-page/laravel/issues",
         "source": "https://github.com/poli-page/laravel",
