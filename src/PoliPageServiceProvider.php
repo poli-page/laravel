@@ -6,14 +6,18 @@ namespace PoliPage\Laravel;
 
 use Closure;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
+use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Foundation\Exceptions\Handler;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
 use PoliPage\Events\RetryEvent;
 use PoliPage\Laravel\Console\RenderCommand;
 use PoliPage\Laravel\Events\PoliPageErrored;
 use PoliPage\Laravel\Events\PoliPageRetrying;
+use PoliPage\Laravel\Http\PoliPageExceptionRenderer;
 use PoliPage\Laravel\Http\PoliPageResponseFactory;
 use PoliPage\PoliPage;
 use PoliPage\PoliPageException;
@@ -83,6 +87,25 @@ final class PoliPageServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([RenderCommand::class]);
         }
+
+        if ((bool) $this->app->make(ConfigRepository::class)->get('poli-page.error_handler', true)) {
+            $this->registerErrorHandler();
+        }
+    }
+
+    /**
+     * Why: an uncaught SDK error otherwise reaches the app as a generic 500; this
+     * answers its own status and `toPayload()` body, the same in every integration.
+     */
+    private function registerErrorHandler(): void
+    {
+        $this->callAfterResolving(ExceptionHandler::class, static function (ExceptionHandler $handler): void {
+            if (! $handler instanceof Handler) {
+                return;
+            }
+            $renderer = new PoliPageExceptionRenderer;
+            $handler->renderable(static fn (PoliPageException $e): JsonResponse => $renderer($e));
+        });
     }
 
     /**
