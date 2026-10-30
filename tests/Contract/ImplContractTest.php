@@ -107,6 +107,8 @@ final class ImplContractTest extends TestCase
         $mock = new MockServer($responses);
         try {
             $config = $this->app->make(Repository::class);
+            // The contract's error cases go through the package's error handler.
+            self::assertTrue((bool) $config->get('poli-page.error_handler', true), 'The example app turns off the error handler (poli-page.error_handler); the contract needs it on');
             $config->set('poli-page.api_key', self::API_KEY);
             $config->set('poli-page.base_url', $mock->origin);
 
