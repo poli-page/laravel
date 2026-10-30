@@ -24,6 +24,14 @@ final class RenderAgainstDevelopApiTest extends TestCase
         $config = $app->make(Repository::class);
         $config->set('poli-page.api_key', $key !== '' ? $key : self::SANDBOX_API_KEY);
         $config->set('poli-page.timeout', 30.0);
+
+        // Why: the live job targets POLI_PAGE_BASE_URL when it is set, else the
+        // SDK default. Set it on the config explicitly instead of relying on
+        // env() reaching the merged config file.
+        $baseUrl = (string) getenv('POLI_PAGE_BASE_URL');
+        if ($baseUrl !== '') {
+            $config->set('poli-page.base_url', $baseUrl);
+        }
     }
 
     public function test_render_getting_started_welcome_template_returns_pdf(): void
