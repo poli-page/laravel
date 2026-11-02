@@ -19,13 +19,13 @@ This package wraps the Poli Page PHP SDK as a Laravel-native integration: a serv
 **When not to:**
 
 - You need to generate PDFs without a remote API — Poli Page is a hosted service.
-- You're working outside Laravel — pick the matching Poli Page package for your stack ([Symfony](https://packagist.org/packages/poli-page/symfony-bundle), Rails, Django, FastAPI, Next.js, NestJS, Rocket).
+- You're working outside Laravel — pick the matching Poli Page package for your stack ([Symfony](https://packagist.org/packages/poli-page/symfony), Rails, Django, FastAPI, Next.js, NestJS, Rocket).
 
 ## Requirements
 
 - PHP 8.3+
 - Laravel 12.x or 13.x
-- [`poli-page/sdk`](https://packagist.org/packages/poli-page/sdk) 0.11.0 or later (Composer installs it with the package)
+- [`poli-page/sdk`](https://packagist.org/packages/poli-page/sdk) 0.13.x (Composer installs it with the package)
 - A Poli Page API key from [app.poli.page](https://app.poli.page)
 
 ## Install
@@ -106,7 +106,7 @@ class InvoiceController
 |---|---|---|
 | `api_key` | `env('POLI_PAGE_API_KEY')` | Your Poli Page API key, `pp_{environment}_{32 hex}`. Required; a malformed value logs one warning and the API decides. |
 | `base_url` | SDK default | API endpoint. Override for staging or self-hosted. |
-| `timeout` | SDK default | Per-request timeout in seconds. Must be between `0` and `600`. |
+| `timeout` | SDK default | Timeout in seconds of each API call and of the PDF download (for `pdfStream()`, the longest wait for the next chunk). Must be between `0` and `600`. |
 | `retries.max_attempts` | SDK default | Automatic retries on 429 / 5xx. Must be between `0` and `10`. |
 | `retries.delay_seconds` | SDK default | Base delay between retries. Must be between `0` and `30`. |
 | `http_client` | `null` | Container key of a PSR-18 `ClientInterface` binding. |
@@ -155,7 +155,7 @@ The package registers an error handler on Laravel's exception handler, on by def
 { "code": "TEMPLATE_NOT_FOUND", "message": "Template 'does-not-exist' not found in project 'getting-started'.", "status": 404, "requestId": "req_…" }
 ```
 
-- The HTTP status is the payload's `status`: the API's status (404, 429, 500, …), `503` for a `network_error` and `504` for a `timeout`. An SDK error with no status (for example `invalid_options`) answers `500`, with `"status": null` in the body.
+- The HTTP status is the payload's `status`: the API's status (404, 429, 500, …), `503` for a `network_error`, `504` for a `timeout` and `502` for an `invalid_response` (a 2xx whose body is not JSON, usually from a proxy between your app and the API). An SDK error with no status (for example `invalid_options`, or `io_error` from `renderToFile()`) answers `500`, with `"status": null` in the body.
 - `requestId` is the API's `x-request-id`, or `null` when there is none.
 - The `Content-Type` is `application/json`. Laravel still reports the exception to your log as usual.
 - For a streamed PDF, call `render->pdfStream()` in the controller and pass its stream to `PoliPageResponseFactory::stream()`, which reads the first chunk before it returns. A render or download error then reaches the handler before any PDF header is sent. Calling the SDK inside your own `StreamedResponse` callback would commit a `200 application/pdf` first.
@@ -170,12 +170,13 @@ or with `'error_handler' => false` in `config/poli-page.php`. A `render()` callb
 
 ### Exception types
 
-The SDK throws four families of exceptions. They all extend `PoliPage\PoliPageException`. Catch them where you want a different answer than the error handler's:
+The SDK throws five families of exceptions. They all extend `PoliPage\PoliPageException`. Catch them where you want a different answer than the error handler's:
 
 - **Auth** — `PoliPage\Exception\AuthenticationException`. Invalid or missing API key (HTTP 401).
 - **Rate limit** — `PoliPage\Exception\RateLimitException`. Rate limit exceeded (HTTP 429); honor `Retry-After`.
 - **Request rejected** — `PoliPage\Exception\BadRequestException`. Template or data rejected by the API (HTTP 400).
 - **Network / transport** — `PoliPage\Exception\ConnectionException`. Network or transport failure after the SDK's retry budget is exhausted.
+- **Invalid response** — `PoliPage\Exception\InvalidResponseException`. A 2xx whose body is not JSON, usually from a proxy or captive portal; never retried.
 
 ```php
 use PoliPage\Exception\AuthenticationException;
@@ -220,11 +221,11 @@ php artisan serve
 
 ## Compatibility
 
-| Package | Laravel | PHP |
-|---|---|---|
-| 0.11.x | 12.x / 13.x | 8.3 / 8.4 / 8.5 |
+| Package | `poli-page/sdk` | Laravel | PHP |
+|---|---|---|---|
+| 0.13.x | 0.13.x | 12.x / 13.x | 8.3 / 8.4 / 8.5 |
 
-The package follows Laravel's own supported-versions window and tracks the latest stable PHP minor.
+The package shares its major.minor with the Poli Page API and requires the SDK of the same minor (see [RELEASING.md](RELEASING.md#versions)). It follows Laravel's own supported-versions window and tracks the latest stable PHP minor.
 
 ## Contributing
 
