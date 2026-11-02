@@ -11,3 +11,4 @@
 /phpunit.xml.dist export-ignore
 /pint.json export-ignore
 /RELEASING.md export-ignore
+/scripts export-ignore

@@ -11,6 +11,7 @@ use Illuminate\Routing\Router;
 use LogicException;
 use Orchestra\Testbench\Attributes\DefineEnvironment;
 use PoliPage\Exception\ConnectionException;
+use PoliPage\Exception\InvalidResponseException;
 use PoliPage\Exception\NotFoundException;
 use PoliPage\Exception\TimeoutException;
 use PoliPage\Laravel\Http\PoliPageResponseFactory;
@@ -94,6 +95,42 @@ final class ErrorHandlerTest extends TestCase
             'code' => 'timeout',
             'message' => 'Request timed out after 60000ms',
             'status' => 504,
+            'requestId' => null,
+        ], $response->json());
+    }
+
+    public function test_an_invalid_response_answers_502_not_its_2xx(): void
+    {
+        self::$toThrow = new InvalidResponseException(
+            'Invalid response: HTTP 200 body is not JSON',
+            PoliPageException::INVALID_RESPONSE,
+            200,
+            'req_proxy',
+        );
+
+        $response = $this->get('/throws');
+
+        $response->assertStatus(502);
+        self::assertSame('application/json', $response->headers->get('Content-Type'));
+        self::assertSame([
+            'code' => 'invalid_response',
+            'message' => 'Invalid response: HTTP 200 body is not JSON',
+            'status' => 502,
+            'requestId' => 'req_proxy',
+        ], $response->json());
+    }
+
+    public function test_an_io_error_answers_500_with_a_null_status(): void
+    {
+        self::$toThrow = new PoliPageException('Failed to write PDF: Permission denied', PoliPageException::IO_ERROR);
+
+        $response = $this->get('/throws');
+
+        $response->assertStatus(500);
+        self::assertSame([
+            'code' => 'io_error',
+            'message' => 'Failed to write PDF: Permission denied',
+            'status' => null,
             'requestId' => null,
         ], $response->json());
     }

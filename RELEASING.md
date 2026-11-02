@@ -2,12 +2,16 @@
 
 The package is published on [Packagist](https://packagist.org) as **`poli-page/laravel`**, the same way as [`poli-page/sdk`](https://github.com/poli-page/sdk-php). Packagist has no upload: it reads the repository, and the version comes from the git tag, so `composer.json` has no `version` field.
 
+## Versions
+
+`poli-page/laravel` shares its major.minor with the Poli Page API: package `0.13.x` talks to API `0.13`, passes the [API contract](https://github.com/poli-page/api-contract) `v0.13.0`, and requires `poli-page/sdk` of the same minor (`^0.13.0`, which Composer reads as `>=0.13.0 <0.14`). Patch numbers are free: a fix to the package alone is a patch, whatever the API's or the SDK's patch. A change of the API contract, a new feature, and a raise of the minimum PHP or Laravel version are each a minor. The package may skip minors when it has nothing to ship for one. The Release workflow refuses a tag whose major.minor differs from the contract version pinned in `.github/workflows/ci.yml` or from the `poli-page/sdk` constraint in `composer.json` and `example-app/composer.json`.
+
 ## How a release runs
 
 Pushing a tag `vX.Y.Z` (or a prerelease `vX.Y.Z-rc1`) starts `.github/workflows/release.yml`:
 
 1. **test**: the whole `ci.yml` matrix on the tagged commit (Pint, PHPStan, unit tests, the API contract suite with the pinned `poli-page/api-contract`, the example-app build).
-2. **Version matches tag**: `composer validate --strict`, no `version` field in `composer.json`, a `## [X.Y.Z]` section in `CHANGELOG.md`, and the example app's path-repository version of `poli-page/laravel` equal to the tag.
+2. **Version matches tag**: `composer validate --strict`, no `version` field in `composer.json`, a `## [X.Y.Z]` section in `CHANGELOG.md`, the example app's path-repository version of `poli-page/laravel` equal to the tag, and `scripts/check-release-versions.sh`: the pinned API contract commit must carry a stable tag `vX.Y.Z` of the tag's major.minor (the `# vX.Y.Z` comment next to the pin is not trusted), and `poli-page/sdk` must be required as `^X.Y` of the tag's major.minor. The error names both versions.
 3. **Publish to Packagist**: waits in the `packagist-release` environment until a reviewer approves, then calls Packagist's `update-package` API with the `PACKAGIST_USERNAME` and `PACKAGIST_API_TOKEN` secrets, and creates the GitHub Release with the CHANGELOG section as notes.
 
 The approval is the publish: Packagist indexes the tag when the workflow pings it. Do not install the Packagist auto-update webhook on this repository, or the tag push alone would publish it before tests and approval. Packagist also re-crawls packages without a webhook from time to time, so approve (or delete the tag) soon after the checks finish.
@@ -22,7 +26,7 @@ git archive HEAD | tar -t
 
 `poli-page/laravel` was free on Packagist on 2026-10-30 (the `poli-page` vendor held only `poli-page/sdk`).
 
-1. On packagist.org, signed in as the account that maintains `poli-page/sdk`, open <https://packagist.org/packages/submit> and submit `https://github.com/poli-page/laravel`. Do it **before** pushing the first tag: Packagist then lists only the `dev-*` branches, and `0.11.0` appears when the release workflow pings it.
+1. On packagist.org, signed in as the account that maintains `poli-page/sdk`, open <https://packagist.org/packages/submit> and submit `https://github.com/poli-page/laravel`. Do it **before** pushing the first tag: Packagist then lists only the `dev-*` branches, and `0.13.0` appears when the release workflow pings it.
 2. Leave the package without the GitHub auto-update hook (Packagist shows a "not auto-updated" notice; that is intended). If the Packagist account syncs GitHub repositories automatically, turn that off for this repository.
 3. In GitHub, `poli-page/laravel` → Settings → Environments → **New environment** `packagist-release`:
    - Required reviewers: the release owner(s).
@@ -37,6 +41,7 @@ git archive HEAD | tar -t
    - Move `[Unreleased]` in `CHANGELOG.md` to `## [X.Y.Z] - YYYY-MM-DD`, leave an empty `## [Unreleased]` above it, and update the compare links at the bottom.
    - Set the example app's version of the package to `X.Y.Z`: `repositories[0].options.versions["poli-page/laravel"]` in `example-app/composer.json`, and the two `v…` labels in `example-app/resources/views/demo.blade.php`.
    - Update the compatibility table in `README.md` when the minor version or the supported Laravel/PHP versions change.
+   - For a new minor `X.Y`: require `poli-page/sdk` `^X.Y.0` in `composer.json` and `example-app/composer.json`, pin the API contract's `vX.Y.Z` commit in `.github/workflows/ci.yml`, and check both with `./scripts/check-release-versions.sh X.Y.Z` (it needs `jq` and network access to list the contract's tags).
 2. Open a PR, wait for CI to be green, merge it.
 3. Tag the merge commit on `main` and push the tag:
 
