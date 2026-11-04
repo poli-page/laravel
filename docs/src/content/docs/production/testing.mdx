@@ -1,0 +1,110 @@
+---
+title: Testing
+description: Test Laravel routes that render Poli Page documents without calling the API, with a fake PSR-18 HTTP client.
+---
+
+Every part of the package reaches the API through one client, `PoliPage\PoliPage`, and the client reaches the network through one PSR-18 `ClientInterface`. In tests you replace that HTTP client with a fake, so your routes, the response factory and the error handler run without a network call. The SDK classes are `final`, so a fake HTTP client is the seam that needs no mocking tricks.
+
+## Override the client
+
+Build a client with your fake and put it in the container, before the request:
+
+```php
+$this->app->instance(PoliPage::class, new PoliPage(
+    apiKey: 'pp_sandbox_'.str_repeat('0', 32),
+    maxRetries: 0,
+    httpClient: $fake,
+    requestFactory: $factory,
+    streamFactory: $factory,
+));
+```
+
+Use an `apiKey` in the key format, such as `pp_sandbox_` followed by 32 zeros. Set `maxRetries: 0` so a faked 5xx or 429 answer is not retried. Your controller then gets this instance, whether it injects the class or uses the facade. For a fake HTTP client, write a class that implements `Psr\Http\Client\ClientInterface` and returns queued responses, or use a mock client library such as `php-http/mock-client`.
+
+Alternatively, set `poli-page.http_client` to the container key of the fake and let the provider build the client: [Configuration](../../concepts/configuration/) lists the option.
+
+## Fake an error
+
+Queue an error answer: a 404 whose JSON body has a `code` and a `message`, and an `x-request-id` header, makes the SDK throw a `NotFoundException` with that code and request ID. The built-in error handler then answers as in production, so you can assert the JSON body and the status.
+
+To test your own error handling without the SDK, throw the exception yourself. `PoliPageException` has a public constructor: `new PoliPageException($message, $errorCode, $status, $requestId)`.
+
+## Test the response factory alone
+
+`PoliPageResponseFactory` is a plain class with no dependencies. Build it with `new PoliPageResponseFactory` in a unit test and assert the headers of what it returns.
+
+## Example
+
+```php
+// tests/Feature/InvoiceControllerTest.php
+namespace Tests\Feature;
+
+use GuzzleHttp\Psr7\HttpFactory;
+use GuzzleHttp\Psr7\Response;
+use PoliPage\Laravel\Http\PoliPageResponseFactory;
+use PoliPage\PoliPage;
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use Tests\TestCase;
+
+final class FakeHttpClient implements ClientInterface
+{
+    /** @var list<ResponseInterface> */
+    private array $queue = [];
+
+    public function queue(ResponseInterface $response): void
+    {
+        $this->queue[] = $response;
+    }
+
+    public function sendRequest(RequestInterface $request): ResponseInterface
+    {
+        return array_shift($this->queue) ?? throw new \LogicException('No response queued.');
+    }
+}
+
+final class InvoiceControllerTest extends TestCase
+{
+    public function test_a_missing_template_answers_404_json(): void
+    {
+        $http = new FakeHttpClient;
+        $http->queue(new Response(404, ['Content-Type' => 'application/json', 'x-request-id' => 'req_123'], json_encode([
+            'code' => 'TEMPLATE_NOT_FOUND',
+            'message' => "Template 'invoice' not found in project 'billing'.",
+        ], JSON_THROW_ON_ERROR)));
+
+        $factory = new HttpFactory;
+        $this->app->instance(PoliPage::class, new PoliPage(
+            apiKey: 'pp_sandbox_'.str_repeat('0', 32),
+            maxRetries: 0,
+            httpClient: $http,
+            requestFactory: $factory,
+            streamFactory: $factory,
+        ));
+
+        // GET /invoices/{id} is the route of the quick start.
+        $this->getJson('/invoices/INV-001')
+            ->assertStatus(404)
+            ->assertExactJson([
+                'code' => 'TEMPLATE_NOT_FOUND',
+                'message' => "Template 'invoice' not found in project 'billing'.",
+                'status' => 404,
+                'requestId' => 'req_123',
+            ]);
+    }
+
+    public function test_the_factory_sets_the_pdf_headers(): void
+    {
+        $response = (new PoliPageResponseFactory)->bytes('%PDF-1.7', 'invoice-INV-001.pdf');
+
+        $this->assertSame('application/pdf', $response->headers->get('Content-Type'));
+        $this->assertStringContainsString('invoice-INV-001.pdf', (string) $response->headers->get('Content-Disposition'));
+    }
+}
+```
+
+## See also
+
+- [Client access](../../concepts/client-access/)
+- [Errors](../errors/)

@@ -1,0 +1,70 @@
+---
+title: Configuration
+description: Every option of config/poli-page.php, its default and its valid range, and how to bind your own HTTP client and logger.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+You configure the package in `config/poli-page.php`, which you publish with `php artisan vendor:publish --tag=poli-page-config`. The package merges its own defaults under the `poli-page` key, so an unpublished config still works with `POLI_PAGE_API_KEY` set.
+
+## Options
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `api_key` | `env('POLI_PAGE_API_KEY')` | Your Poli Page API key, `pp_{environment}_{32 hex}`. Required: an empty or missing value throws. A malformed value logs one warning and the API decides. |
+| `base_url` | `env('POLI_PAGE_BASE_URL')` | API endpoint. Override for staging or self-hosted. Must use `http` or `https`. |
+| `timeout` | `env('POLI_PAGE_TIMEOUT')` | Timeout in seconds of each API call and of the PDF download (for `pdfStream()`, the longest wait for the next chunk). Greater than `0` and at most `600`. |
+| `retries.max_attempts` | `env('POLI_PAGE_RETRY_MAX_ATTEMPTS')` | Automatic retries on 429 and 5xx. Between `0` and `10`. |
+| `retries.delay_seconds` | `env('POLI_PAGE_RETRY_DELAY_SECONDS')` | Base delay between retries. Between `0` and `30`. |
+| `http_client` | `null` | Container key of a PSR-18 `ClientInterface` binding. |
+| `request_factory` | `null` | Container key of a PSR-17 `RequestFactoryInterface` binding. |
+| `stream_factory` | `null` | Container key of a PSR-17 `StreamFactoryInterface` binding. |
+| `logger` | `null` | Container key of a PSR-3 `LoggerInterface` binding. |
+| `on_retry` | `null` | Container key of a callable. When set, replaces the default `PoliPageRetrying` event bridge. |
+| `on_error` | `null` | Container key of a callable. When set, replaces the default `PoliPageErrored` event bridge. |
+| `error_handler` | `env('POLI_PAGE_ERROR_HANDLER', true)` | Answers an uncaught `PoliPageException` with its `toPayload()` JSON. Set to `false` to handle SDK errors yourself. |
+
+Every optional key is `null` by default, and the SDK then applies its own default.
+
+## Validation
+
+The client is built the first time something asks the container for `PoliPage\PoliPage`, and the config is validated then. An invalid value throws an `InvalidArgumentException` whose message names the option and the value, for example `Poli Page timeout must be > 0 and <= 600 seconds. Got: 0.` or `Poli Page retries.max_attempts must be between 0 and 10. Got: 11.`.
+
+A container key in `http_client`, `request_factory`, `stream_factory` or `logger` must be a string, and what it resolves to must implement the matching PSR interface. `on_retry` and `on_error` must be strings that resolve to a callable.
+
+## The callbacks
+
+`on_retry` and `on_error` replace the default event bridges. The callable gets the SDK's `RetryEvent` for `on_retry` and the `PoliPageException` for `on_error`. See [Observability](../../production/observability/) for the events the default bridges dispatch.
+
+<Aside type="caution">
+Setting `on_retry` or `on_error` turns the matching Laravel event off: no `PoliPageRetrying` or `PoliPageErrored` is dispatched while it is set.
+</Aside>
+
+## Example
+
+```php
+// config/poli-page.php
+return [
+    'api_key' => env('POLI_PAGE_API_KEY'),
+    'base_url' => env('POLI_PAGE_BASE_URL'),
+    'timeout' => env('POLI_PAGE_TIMEOUT', 30),
+    'retries' => [
+        'max_attempts' => env('POLI_PAGE_RETRY_MAX_ATTEMPTS', 3),
+        'delay_seconds' => env('POLI_PAGE_RETRY_DELAY_SECONDS'),
+    ],
+    'http_client' => null,
+    'request_factory' => null,
+    'stream_factory' => null,
+    'logger' => 'log',
+    'on_retry' => null,
+    'on_error' => null,
+    'error_handler' => env('POLI_PAGE_ERROR_HANDLER', true),
+];
+```
+
+Here `'log'` is the container key of Laravel's PSR-3 logger.
+
+## See also
+
+- [Client access](../client-access/)
+- [API reference](../../reference/api/)

@@ -1,0 +1,72 @@
+---
+title: Install
+description: Install poli-page/laravel with Composer and set POLI_PAGE_API_KEY. Package auto-discovery registers the rest.
+---
+
+`poli-page/laravel` is published on Packagist. It wraps the [Poli Page PHP SDK](https://packagist.org/packages/poli-page/sdk), which Composer installs with it, and adds a container singleton, a `PoliPage` facade, a response factory, an Artisan command and Laravel events.
+
+## Requirements
+
+- PHP 8.3 or later.
+- Laravel 12 or 13.
+- `poli-page/sdk` 0.13.x. Composer installs it with the package.
+- A Poli Page API key from [app.poli.page](https://app.poli.page).
+
+CI runs the unit and contract tests on PHP 8.3, 8.4 and 8.5, against Laravel 12 and 13.
+
+## Install the packages
+
+```bash
+composer require poli-page/laravel
+```
+
+The SDK finds an HTTP client through PSR-18 discovery. A Laravel app already has Guzzle, and `php-http/guzzle7-adapter` exposes it as a PSR-18 client. Install the adapter if the SDK reports that it found no client, or bind your own client with the `http_client` option.
+
+## Set your API key
+
+Add the key to `.env`:
+
+```bash
+POLI_PAGE_API_KEY=pp_sandbox_…
+```
+
+Each API key belongs to one environment of your organization and has the form `pp_{environment}_{32 lowercase hex characters}`. Start with your `sandbox` key:
+
+| Environment | Key | Watermark | Counted |
+| --- | --- | --- | --- |
+| `sandbox` (every org) | `pp_sandbox_…` | yes | no |
+| `live` (every org, deletable on Pro+) | `pp_live_…` | no | yes |
+| created on Pro+ (for example `staging`) | `pp_staging_…` | no | yes |
+
+"Counted" means the render counts toward your organization's monthly PDF quota. The key picks the environment, and each render uses the copy of the project published in that environment, so there is no template version to pass.
+
+The package only requires the key to be set. A key that does not match the format logs one warning through Laravel's logger when the client is first resolved (the key itself is never logged), and the API answers `401` if it is invalid.
+
+## Register the package
+
+Package auto-discovery registers `PoliPageServiceProvider` and the `PoliPage` facade alias, so there is nothing to add to `config/app.php`. The provider merges the package config under the `poli-page` key and registers the `poli-page:render` Artisan command.
+
+Publish the config file when you want to edit it:
+
+```bash
+php artisan vendor:publish --tag=poli-page-config
+```
+
+## Example
+
+Check the whole setup from the command line with a `sandbox` key. Every organization has the `getting-started` project with a `welcome` template in `sandbox`:
+
+```bash
+php artisan poli-page:render \
+    --project=getting-started \
+    --template=welcome \
+    --data='{"name":"World"}' \
+    -o welcome.pdf
+```
+
+The command writes `welcome.pdf` and prints the byte count and the elapsed time.
+
+## See also
+
+- [Quick start](../quick-start/)
+- [Configuration](../../concepts/configuration/)

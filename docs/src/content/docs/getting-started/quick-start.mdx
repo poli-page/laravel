@@ -1,0 +1,67 @@
+---
+title: Quick start
+description: Return your first Poli Page PDF from a Laravel controller.
+---
+
+This page takes you from an installed package to a PDF answered by a controller route. You inject the SDK client and the response factory, render a template, and let the factory set the PDF headers.
+
+## Install the package
+
+Install `poli-page/laravel` and set `POLI_PAGE_API_KEY`, as [Install](../install/) shows. The client is created on first use and validates the config then: a missing `api_key` throws an `InvalidArgumentException`.
+
+## Render from a controller
+
+Type-hint `PoliPage\PoliPage` and `PoliPage\Laravel\Http\PoliPageResponseFactory` in the controller's constructor. `$poliPage->render->pdf(new RenderInput(...))` is the SDK's own call: it renders the template and returns the PDF bytes as a string.
+
+Pass the bytes to `$responses->bytes($pdf, $filename)`. It answers `200` with `Content-Type: application/pdf`, a `Content-Disposition` built from the filename, `Content-Length` and `Cache-Control: private, no-store`.
+
+The render needs a project and a template published to the environment of your key. Every organization has a `getting-started` project with a `welcome` template in `sandbox`, so `project: 'getting-started'`, `template: 'welcome'` and `data: ['name' => 'World']` work with a fresh `sandbox` key.
+
+## Example
+
+```php
+// app/Http/Controllers/InvoiceController.php
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Response;
+use PoliPage\Laravel\Http\PoliPageResponseFactory;
+use PoliPage\PoliPage;
+use PoliPage\RenderInput;
+
+class InvoiceController
+{
+    public function __construct(
+        private readonly PoliPage $poliPage,
+        private readonly PoliPageResponseFactory $responses,
+    ) {}
+
+    public function show(string $id): Response
+    {
+        $pdf = $this->poliPage->render->pdf(new RenderInput(
+            project: 'billing',
+            template: 'invoice',
+            data: ['invoiceNumber' => $id],
+        ));
+
+        return $this->responses->bytes($pdf, "invoice-{$id}.pdf");
+    }
+}
+```
+
+Register the route in `routes/web.php`:
+
+```php
+// routes/web.php
+use App\Http\Controllers\InvoiceController;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/invoices/{id}', [InvoiceController::class, 'show']);
+```
+
+`GET /invoices/INV-001` answers the PDF as `invoice-INV-001.pdf`.
+
+## See also
+
+- [Client access](../../concepts/client-access/)
+- [Responses](../../concepts/responses/)
+- [Errors](../../production/errors/)

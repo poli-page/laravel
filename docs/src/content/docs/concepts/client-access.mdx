@@ -1,0 +1,74 @@
+---
+title: Client access
+description: Reach the Poli Page client from Laravel through constructor injection, the PoliPage facade or the container.
+---
+
+The package binds one SDK client, `PoliPage\PoliPage`, as a singleton in the container. The client exposes `render` and `documents` as public properties, and every access path below returns that same instance, built from `config/poli-page.php`.
+
+## Constructor injection
+
+Type-hint `PoliPage\PoliPage` in a controller, job or any class the container builds, then use `$poliPage->render` and `$poliPage->documents`:
+
+```php
+use PoliPage\PoliPage;
+
+public function __construct(private readonly PoliPage $poliPage) {}
+```
+
+## The facade
+
+`PoliPage\Laravel\Facades\PoliPage` is registered as the `PoliPage` alias by auto-discovery. The SDK's `render` and `documents` are properties, and facades proxy methods only, so the facade gives you two static methods, `render()` and `documents()`, that return those properties:
+
+```php
+use PoliPage\Laravel\Facades\PoliPage;
+
+$pdf = PoliPage::render()->pdf($input);
+$document = PoliPage::documents()->get($documentId);
+```
+
+Use the facade where injection is awkward, for example in a Blade view or a helper. The facade resolves the same singleton as injection does.
+
+## The container
+
+`app(PoliPage\PoliPage::class)` and `app()->make(PoliPage\PoliPage::class)` return the singleton too. Bind your own instance with `$this->app->instance(PoliPage::class, $client)`: [Testing](../../production/testing/) uses this to swap in a fake.
+
+## Example
+
+```php
+// app/Services/InvoiceRenderer.php
+namespace App\Services;
+
+use PoliPage\Laravel\Facades\PoliPage as PoliPageFacade;
+use PoliPage\PoliPage;
+use PoliPage\RenderInput;
+
+class InvoiceRenderer
+{
+    public function __construct(private readonly PoliPage $poliPage) {}
+
+    public function render(string $number): string
+    {
+        return $this->poliPage->render->pdf($this->input($number));
+    }
+
+    public function renderWithFacade(string $number): string
+    {
+        return PoliPageFacade::render()->pdf($this->input($number));
+    }
+
+    private function input(string $number): RenderInput
+    {
+        return new RenderInput(
+            project: 'billing',
+            template: 'invoice',
+            data: ['invoiceNumber' => $number],
+        );
+    }
+}
+```
+
+## See also
+
+- [Configuration](../configuration/)
+- [Responses](../responses/)
+- [Testing](../../production/testing/)

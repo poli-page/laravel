@@ -1,0 +1,18 @@
+---
+title: Poli Page Laravel integration
+description: Render Poli Page documents from Laravel controllers with poli-page/laravel.
+template: splash
+hero:
+  tagline: Render Poli Page documents as Laravel HTTP responses.
+  actions:
+    - { text: Quick start, link: /laravel/getting-started/quick-start/, icon: rocket }
+    - { text: API reference, link: /laravel/reference/api/, icon: open-book }
+---
+
+import { CardGrid, Card } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <Card title="Quick start" icon="rocket">Install the package and return a PDF from a controller.</Card>
+  <Card title="Concepts" icon="puzzle">The config file, client access through the container and the facade, PDF and preview responses.</Card>
+  <Card title="API reference" icon="open-book">Every class, option and command of `poli-page/laravel`, on one page.</Card>
+</CardGrid>
