@@ -10,7 +10,7 @@
         "poli-page/sdk": "^0.13.0"
     },
     "repositories": [
-        { "type": "path", "url": "../", "options": { "symlink": true, "versions": { "poli-page/laravel": "0.13.0" } } }
+        { "type": "path", "url": "../", "options": { "symlink": true, "versions": { "poli-page/laravel": "0.13.1" } } }
     ],
     "config": {
         "allow-plugins": {
