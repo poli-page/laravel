@@ -1,0 +1,111 @@
+---
+title: API
+description: Every public class, config option and Artisan command of poli-page/laravel, with signatures and exact behavior.
+---
+
+This page lists everything `poli-page/laravel` adds to a Laravel app, in the order a request meets it. The SDK types it hands you, `PoliPage\PoliPage`, `Render`, `Documents` and `PoliPageException`, are documented in the [SDK reference](../sdk/).
+
+## PoliPageServiceProvider
+
+```php
+namespace PoliPage\Laravel;
+
+final class PoliPageServiceProvider extends ServiceProvider
+```
+
+Auto-discovered through `extra.laravel.providers` in `composer.json`.
+
+- **register**: merges `config/poli-page.php` under `poli-page`, binds `PoliPageResponseFactory` as a singleton, and binds `PoliPage\PoliPage` as a singleton that is built, and its config validated, the first time it is resolved. A missing or empty `api_key` throws an `InvalidArgumentException` with the message `Poli Page api_key is required. Set POLI_PAGE_API_KEY in your .env file.`. A key that does not match `pp_{environment}_{32 lowercase hex}` logs one warning through Laravel's logger, without the key. The other validation messages are listed in [Configuration](../../concepts/configuration/).
+- **boot**: makes the config publishable under the tag `poli-page-config`, registers `RenderCommand` when the app runs in the console, and, unless `poli-page.error_handler` is false, registers the error handler.
+
+## Config
+
+`config/poli-page.php`, published with `php artisan vendor:publish --tag=poli-page-config`. Every key, its default and its range are in [Configuration](../../concepts/configuration/).
+
+## PoliPage (facade)
+
+```php
+namespace PoliPage\Laravel\Facades;
+
+final class PoliPage extends Facade
+{
+    public static function render(): Render;
+    public static function documents(): Documents;
+}
+```
+
+The facade accessor is `PoliPage\PoliPage`, and the alias `PoliPage` is registered by auto-discovery. `render()` and `documents()` return the client's `render` and `documents` properties.
+
+## PoliPageResponseFactory
+
+```php
+namespace PoliPage\Laravel\Http;
+
+final class PoliPageResponseFactory
+{
+    public function bytes(string $pdf, string $filename = 'document.pdf', bool $inline = false): Response;
+    public function stream(StreamInterface $stream, string $filename = 'document.pdf', bool $inline = false): StreamedResponse;
+    public function preview(DocumentPreviewResult $preview): Response;
+    public function documentRedirect(DocumentDescriptor $doc): RedirectResponse;
+}
+```
+
+- `bytes()` answers `200` with `Content-Type`, `Content-Length`, `Content-Disposition`, `Cache-Control: private, no-store` and `X-Content-Type-Options: nosniff`.
+- `stream()` rewinds a seekable stream and reads its first 8192 bytes before it returns, so a download error is thrown before any header is sent. It then sends the rest in 8192-byte chunks, flushing after each. `Content-Length` is set only when the stream reports a size.
+- `preview()` answers `200` with `Content-Type: text/html; charset=utf-8` and the same cache and nosniff headers.
+- `documentRedirect()` answers `302` to the descriptor's `presignedPdfUrl`, with `Cache-Control: private, no-store`.
+
+The filename rules are on [Responses](../../concepts/responses/).
+
+## PoliPageExceptionRenderer
+
+```php
+namespace PoliPage\Laravel\Http;
+
+final class PoliPageExceptionRenderer
+{
+    public function __invoke(PoliPageException $exception): JsonResponse;
+}
+```
+
+Answers `$exception->toPayload()` as JSON with the payload's `status`, or `500` when it is `null`. The provider registers it on Laravel's exception handler unless `error_handler` is false. The statuses are on [Errors](../../production/errors/).
+
+## Events
+
+```php
+namespace PoliPage\Laravel\Events;
+
+final readonly class PoliPageRetrying
+{
+    public function __construct(public RetryEvent $sdkEvent) {}
+}
+
+final readonly class PoliPageErrored
+{
+    public function __construct(public PoliPageException $exception) {}
+}
+```
+
+Dispatched by the default `on_retry` and `on_error` bridges. See [Observability](../../production/observability/).
+
+## poli-page:render
+
+```bash
+php artisan poli-page:render --project=<slug> --template=<slug> [--data=<json>] [--data-file=<path>] [-o <path>]
+```
+
+Renders a template to a PDF file, to check the integration end to end.
+
+| Option | Default | Effect |
+| --- | --- | --- |
+| `--project` | | Project slug. Required. |
+| `--template` | | Template slug. Required. |
+| `--data` | | Inline JSON for the data. Must decode to a JSON object. |
+| `--data-file` | | Read the JSON from a file, or from stdin with `-`. Takes precedence over `--data`. |
+| `-o`, `--output` | `./poli-page-render.pdf` | Output path. Missing parent directories are created. |
+
+Without `--project` or `--template`, the command prints `--project and --template are required.` and exits with `2`. On success it prints `Rendered <bytes> bytes in <ms>ms. Wrote to <path>.` and exits with `0`. When the SDK throws, it prints the message with the status, code and request ID, and exits with `1` for a 4xx status, `2` for a 5xx and `3` for an error with no status. The API key is redacted from every message.
+
+## SDK types
+
+The package re-exports no SDK type. Import `PoliPage\PoliPage`, `PoliPage\RenderInput`, `PoliPage\PoliPageException` and the `PoliPage\Exception\*` classes from `poli-page/sdk`.

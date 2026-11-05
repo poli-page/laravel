@@ -1,10 +1,20 @@
 # Poli Page for Laravel
 
+[![Packagist](https://img.shields.io/packagist/v/poli-page/laravel?style=flat&logo=php&logoColor=ffffff&label=Packagist)](https://packagist.org/packages/poli-page/laravel)
+[![Downloads](https://img.shields.io/packagist/dt/poli-page/laravel?style=flat&logo=php&logoColor=ffffff&label=Downloads)](https://packagist.org/packages/poli-page/laravel)
+[![Ci](https://img.shields.io/github/actions/workflow/status/poli-page/laravel/ci.yml?branch=main&style=flat&logo=githubactions&logoColor=ffffff&label=Ci)](https://github.com/poli-page/laravel/actions/workflows/ci.yml)
+[![Codeql](https://img.shields.io/github/actions/workflow/status/poli-page/laravel/codeql.yml?branch=main&style=flat&logo=github&logoColor=ffffff&label=Codeql)](https://github.com/poli-page/laravel/actions/workflows/codeql.yml)
+[![Coverage](https://img.shields.io/codecov/c/github/poli-page/laravel?style=flat&logo=codecov&logoColor=ffffff&label=Coverage)](https://codecov.io/gh/poli-page/laravel)
+[![Php](https://img.shields.io/packagist/php-v/poli-page/laravel?style=flat&logo=php&logoColor=ffffff&label=Php)](https://packagist.org/packages/poli-page/laravel)
+[![Laravel](https://img.shields.io/badge/Laravel-12%20%7C%2013-blue?style=flat&logo=laravel&logoColor=ffffff)](https://laravel.com/)
+[![Phpstan](https://img.shields.io/badge/Phpstan-8-blue?style=flat&logo=php&logoColor=ffffff)](phpstan.neon)
+[![Deps](https://img.shields.io/badge/Deps-up%20to%20date-brightgreen?style=flat&logo=php&logoColor=ffffff)](https://github.com/poli-page/laravel/network/dependencies)
+[![Docs](https://img.shields.io/badge/Docs-online-brightgreen?style=flat&logo=readthedocs&logoColor=ffffff)](https://poli-page.github.io/laravel/)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=flat&logo=gnu&logoColor=ffffff)](LICENSE)
+
 > Render Poli Page documents as Laravel HTTP responses.
 
-[![CI](https://github.com/poli-page/laravel/actions/workflows/ci.yml/badge.svg)](https://github.com/poli-page/laravel/actions/workflows/ci.yml)
-[![Latest Stable Version](https://img.shields.io/packagist/v/poli-page/laravel.svg)](https://packagist.org/packages/poli-page/laravel)
-[![License](https://img.shields.io/packagist/l/poli-page/laravel.svg)](LICENSE)
+→ **Documentation**: https://poli-page.github.io/laravel/
 
 ## About
 
@@ -143,7 +153,7 @@ return [
 | `PoliPage\Laravel\Events\PoliPageErrored` | Laravel event dispatched on terminal SDK errors. Wraps the underlying `PoliPageException`. |
 | `php artisan poli-page:render` | End-to-end smoke-test command. Renders a template to a PDF file. |
 
-Full reference: [docs.poli.page](https://docs.poli.page).
+Full reference: [poli-page.github.io/laravel](https://poli-page.github.io/laravel/reference/api/).
 
 ## Errors
 
@@ -214,10 +224,10 @@ php artisan serve
 
 ## Going further
 
-- Event bridges — listening to `PoliPageRetrying` and `PoliPageErrored` from Laravel listeners (forthcoming `docs/events.md`).
-- Streaming large PDFs — using `PoliPageResponseFactory::stream()` for multi-megabyte documents (forthcoming `docs/streaming.md`).
-- Stored documents — persisting a `document_id` and serving presigned URLs through `documentRedirect()` (forthcoming `docs/storage.md`).
-- Testing — swapping the singleton with `PoliPage::swap($fake)` or `$this->app->instance()` (forthcoming `docs/testing.md`).
+- [Event bridges](https://poli-page.github.io/laravel/production/observability/): listening to `PoliPageRetrying` and `PoliPageErrored` from Laravel listeners.
+- [Streaming large PDFs](https://poli-page.github.io/laravel/concepts/responses/#streamed-pdf): using `PoliPageResponseFactory::stream()` for multi-megabyte documents.
+- [Stored documents](https://poli-page.github.io/laravel/concepts/responses/#redirect-to-a-stored-document): serving presigned URLs through `documentRedirect()`.
+- [Testing](https://poli-page.github.io/laravel/production/testing/): replacing the client with a fake HTTP client.
 
 ## Compatibility
 

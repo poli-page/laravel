@@ -2,6 +2,7 @@
 # leaves out every export-ignore path: the package ships src/, config/, the
 # README, the CHANGELOG and the LICENSE, and nothing used only to develop it.
 /.github export-ignore
+/docs export-ignore
 /example-app export-ignore
 /tests export-ignore
 /.coderabbit.yaml export-ignore

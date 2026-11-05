@@ -1,0 +1,61 @@
+---
+title: Observability
+description: Log and trace Poli Page retries and failures from Laravel listeners with the PoliPageRetrying and PoliPageErrored events.
+---
+
+The package forwards the SDK's `onRetry` and `onError` hooks onto Laravel's event dispatcher. They are the integration's observability hooks: listen to them to log, count or trace what the client does behind your routes.
+
+## The events
+
+- `PoliPage\Laravel\Events\PoliPageRetrying` is dispatched each time the SDK decides to retry. Its `sdkEvent` property is the SDK's `RetryEvent`: `attempt`, `delayMs`, and `reason`, the `PoliPageException` that caused the retry.
+- `PoliPage\Laravel\Events\PoliPageErrored` is dispatched when a request fails for good, after the retries. Its `exception` property is the `PoliPageException`.
+
+Both are read-only value objects. The SDK does not wait for your listeners to act on the request.
+
+## Use your own callbacks
+
+Set `on_retry` or `on_error` in `config/poli-page.php` to the container key of a callable, and that callable replaces the matching event bridge: the event is no longer dispatched. See [Configuration](../../concepts/configuration/).
+
+## Request IDs
+
+`$exception->requestId` is the API's `x-request-id`. Log it: it is what Poli Page support asks for. The built-in error handler also sends `requestId` in the JSON body of every error answer.
+
+## Example
+
+```php
+// app/Providers/AppServiceProvider.php
+namespace App\Providers;
+
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\ServiceProvider;
+use PoliPage\Laravel\Events\PoliPageErrored;
+use PoliPage\Laravel\Events\PoliPageRetrying;
+
+class AppServiceProvider extends ServiceProvider
+{
+    public function boot(): void
+    {
+        Event::listen(PoliPageRetrying::class, function (PoliPageRetrying $event): void {
+            Log::warning('Poli Page retry', [
+                'attempt' => $event->sdkEvent->attempt,
+                'delayMs' => $event->sdkEvent->delayMs,
+                'code' => $event->sdkEvent->reason->errorCode,
+            ]);
+        });
+
+        Event::listen(PoliPageErrored::class, function (PoliPageErrored $event): void {
+            Log::error('Poli Page error', [
+                'code' => $event->exception->errorCode,
+                'requestId' => $event->exception->requestId,
+                'message' => $event->exception->getMessage(),
+            ]);
+        });
+    }
+}
+```
+
+## See also
+
+- [Configuration](../../concepts/configuration/)
+- [Errors](../errors/)

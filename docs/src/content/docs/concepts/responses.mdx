@@ -1,0 +1,82 @@
+---
+title: Responses
+description: Answer PDFs, streamed PDFs, HTML previews and document redirects from Laravel routes with PoliPageResponseFactory.
+---
+
+`PoliPage\Laravel\Http\PoliPageResponseFactory` builds the HTTP answers for the four things a route returns: PDF bytes, a streamed PDF, an HTML preview of a stored document, and a redirect to a stored document. Inject it, or resolve it from the container: it is a singleton.
+
+Every response sets `Cache-Control: private, no-store` and `X-Content-Type-Options: nosniff`.
+
+## PDF
+
+`bytes(string $pdf, string $filename = 'document.pdf', bool $inline = false): Response` answers `200` with the bytes from `render->pdf()`.
+
+| Parameter | Default | Effect |
+| --- | --- | --- |
+| `$filename` | `'document.pdf'` | Sets the filename in `Content-Disposition`. |
+| `$inline` | `false` | `true` answers `inline` (the browser shows the PDF) instead of `attachment` (the browser downloads it). |
+
+The headers are `Content-Type: application/pdf`, `Content-Length` and `Content-Disposition`. The filename is cleaned before it goes in the header: control characters are removed, `/` and `\` become `_`, and an empty result falls back to `document.pdf`. The header carries an ASCII `filename` fallback, where each non-ASCII character becomes `?`, and a UTF-8 `filename*` for the exact name.
+
+## Streamed PDF
+
+`stream(StreamInterface $stream, string $filename = 'document.pdf', bool $inline = false): StreamedResponse` sends the PDF from `render->pdfStream()` while it downloads, so a large document does not sit in memory. It sets `Content-Length` only when the stream knows its size.
+
+The factory reads the first chunk before it returns, so a render or download error reaches the [error handler](../../production/errors/) before any PDF header is sent. Call `render->pdfStream()` in the controller and pass its stream to `stream()`. If you call the SDK inside your own `StreamedResponse` callback, Laravel has already committed a `200 application/pdf`, and an error can only truncate the body.
+
+## HTML preview
+
+`preview(DocumentPreviewResult $preview): Response` answers the HTML of a stored document with `Content-Type: text/html; charset=utf-8`. The result comes from `documents->preview($id)`.
+
+## Redirect to a stored document
+
+`documentRedirect(DocumentDescriptor $doc): RedirectResponse` answers `302` to the document's `presignedPdfUrl`. `render->document()` stores the rendered document and returns the descriptor, and `documents->get($id)` returns it again later with a fresh URL. A presigned URL is valid for 15 minutes, so redirect from a route that fetches the descriptor, rather than storing the URL.
+
+## Example
+
+```php
+// app/Http/Controllers/InvoiceController.php
+namespace App\Http\Controllers;
+
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
+use PoliPage\Laravel\Http\PoliPageResponseFactory;
+use PoliPage\PoliPage;
+use PoliPage\RenderInput;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
+class InvoiceController
+{
+    public function __construct(
+        private readonly PoliPage $poliPage,
+        private readonly PoliPageResponseFactory $responses,
+    ) {}
+
+    public function pdf(string $id): StreamedResponse
+    {
+        $stream = $this->poliPage->render->pdfStream(new RenderInput(
+            project: 'billing',
+            template: 'invoice',
+            data: ['invoiceNumber' => $id],
+        ));
+
+        return $this->responses->stream($stream, "invoice-{$id}.pdf", inline: true);
+    }
+
+    public function preview(string $documentId): Response
+    {
+        return $this->responses->preview($this->poliPage->documents->preview($documentId));
+    }
+
+    public function download(string $documentId): RedirectResponse
+    {
+        return $this->responses->documentRedirect($this->poliPage->documents->get($documentId));
+    }
+}
+```
+
+## See also
+
+- [Quick start](../../getting-started/quick-start/)
+- [Errors](../../production/errors/)
+- [API reference](../../reference/api/)

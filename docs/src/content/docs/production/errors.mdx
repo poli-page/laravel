@@ -1,0 +1,81 @@
+---
+title: Errors
+description: How SDK errors reach a Laravel app, what the built-in error handler answers, and how to handle them yourself.
+---
+
+Every failure the SDK throws is a `PoliPage\PoliPageException`, with an `errorCode`, an optional `status` and an optional `requestId`. The package registers an error handler on Laravel's exception handler, so an exception your code does not catch becomes a JSON answer instead of a generic `500`.
+
+## The error
+
+The subclasses under `PoliPage\Exception\*` let you catch by family:
+
+- `AuthenticationException`: invalid or missing API key (HTTP 401).
+- `RateLimitException`: rate limit exceeded (HTTP 429). Honor `Retry-After`.
+- `BadRequestException`: template or data rejected by the API (HTTP 400).
+- `ConnectionException`: network or transport failure after the SDK's retry budget is spent.
+- `InvalidResponseException`: a 2xx whose body is not JSON, usually from a proxy or captive portal. It is never retried.
+
+The predicates `isAuthError()`, `isRateLimitError()`, `isValidationError()`, `isNetworkError()` and `isRetryable()` read `status` and `errorCode`. The [SDK's Errors page](https://poli-page.github.io/sdk-php/production/errors/) lists every code.
+
+## What the handler answers
+
+An uncaught `PoliPageException` answers its `toPayload()` as `application/json`:
+
+```json
+{ "code": "TEMPLATE_NOT_FOUND", "message": "Template 'does-not-exist' not found in project 'getting-started'.", "status": 404, "requestId": "req_…" }
+```
+
+The HTTP status is the payload's `status`:
+
+| Error | Status |
+| --- | --- |
+| An API error | The API's status (404, 429, 500, …). |
+| `network_error` | `503` |
+| `timeout` | `504` |
+| `invalid_response` | `502` |
+| No status, for example `invalid_options` or `io_error` | `500`, with `"status": null` in the body. |
+
+`requestId` is the API's `x-request-id`, or `null` when there is none. Laravel still reports the exception to your log as usual.
+
+## Handle errors yourself
+
+Turn the handler off to answer SDK errors in your own way:
+
+```bash
+POLI_PAGE_ERROR_HANDLER=false
+```
+
+or set `'error_handler' => false` in `config/poli-page.php`. Without the handler, Laravel treats the exception like any other. A `render()` callback registered for `PoliPageException` in `bootstrap/app.php` also takes precedence when it returns a response. Catch the exception in the controller when one route needs its own answer.
+
+## Example
+
+```php
+// app/Http/Controllers/InvoiceController.php
+use PoliPage\Exception\AuthenticationException;
+use PoliPage\Exception\BadRequestException;
+use PoliPage\Exception\ConnectionException;
+use PoliPage\Exception\RateLimitException;
+use PoliPage\PoliPageException;
+
+try {
+    $pdf = $this->poliPage->render->pdf($input);
+} catch (AuthenticationException $e) {
+    abort(500, 'Poli Page credentials rejected.');
+} catch (RateLimitException $e) {
+    return response('Try again shortly.', 503);
+} catch (BadRequestException $e) {
+    return back()->withErrors(['template' => $e->getMessage()]);
+} catch (ConnectionException $e) {
+    report($e);
+    abort(502);
+} catch (PoliPageException $e) {
+    report($e);
+    abort(500);
+}
+```
+
+## See also
+
+- [Configuration](../../concepts/configuration/)
+- [Responses](../../concepts/responses/)
+- [Testing](../testing/)
