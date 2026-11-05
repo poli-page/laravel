@@ -4,6 +4,8 @@ All notable changes to `poli-page/laravel` are documented here. Format follows [
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-11-05
+
 ### Added
 - `retries.max_retries` (env `POLI_PAGE_RETRY_MAX_RETRIES`): the number of retries after the first attempt (0 to 10), passed to the SDK as `maxRetries`.
 
@@ -50,5 +52,6 @@ First release on Packagist. It requires `poli-page/sdk` 0.13 and passes the Poli
 - A key ending in a newline now logs the malformed-key warning (the format check is anchored with `\z`, not `$`).
 - `php artisan poli-page:render` no longer prints the configured API key in its error output. A key ending in a newline made PSR-7 reject the `Authorization` header with the whole `Bearer <key>` value in the exception message, which the command printed as is. Guzzle trims spaces and tabs from the value first, so the trimmed key is redacted too.
 
-[Unreleased]: https://github.com/poli-page/laravel/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/poli-page/laravel/compare/v0.13.1...HEAD
+[0.13.1]: https://github.com/poli-page/laravel/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/poli-page/laravel/releases/tag/v0.13.0
