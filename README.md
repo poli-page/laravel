@@ -116,8 +116,8 @@ class InvoiceController
 |---|---|---|
 | `api_key` | `env('POLI_PAGE_API_KEY')` | Your Poli Page API key, `pp_{environment}_{32 hex}`. Required; a malformed value logs one warning and the API decides. |
 | `base_url` | SDK default | API endpoint. Override for staging or self-hosted. |
-| `timeout` | SDK default | Timeout in seconds of each API call and of the PDF download (for `pdfStream()`, the longest wait for the next chunk). Must be between `0` and `600`. |
-| `retries.max_attempts` | SDK default | Automatic retries on 429 / 5xx. Must be between `0` and `10`. |
+| `timeout` | SDK default | Timeout in seconds of each API call and of the PDF download (for `pdfStream()`, the longest wait for the next chunk). Greater than `0` and at most `600`. |
+| `retries.max_retries` | SDK default | Retries after the first attempt, on 429 / 5xx, so a call makes at most `max_retries + 1` attempts. Must be between `0` and `10`. `retries.max_attempts` is the deprecated former name, same meaning. |
 | `retries.delay_seconds` | SDK default | Base delay between retries. Must be between `0` and `30`. |
 | `http_client` | `null` | Container key of a PSR-18 `ClientInterface` binding. |
 | `request_factory` | `null` | Container key of a PSR-17 `RequestFactoryInterface` binding. |
@@ -136,7 +136,7 @@ return [
     'base_url' => env('POLI_PAGE_BASE_URL'),
     'timeout' => env('POLI_PAGE_TIMEOUT'),
     'retries' => [
-        'max_attempts' => env('POLI_PAGE_RETRY_MAX_ATTEMPTS'),
+        'max_retries' => env('POLI_PAGE_RETRY_MAX_RETRIES', env('POLI_PAGE_RETRY_MAX_ATTEMPTS')),
         'delay_seconds' => env('POLI_PAGE_RETRY_DELAY_SECONDS'),
     ],
 ];

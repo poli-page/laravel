@@ -14,7 +14,7 @@ You configure the package in `config/poli-page.php`, which you publish with `php
 | `api_key` | `env('POLI_PAGE_API_KEY')` | Your Poli Page API key, `pp_{environment}_{32 hex}`. Required: an empty or missing value throws. A malformed value logs one warning and the API decides. |
 | `base_url` | `env('POLI_PAGE_BASE_URL')` | API endpoint. Override for staging or self-hosted. Must use `http` or `https`. |
 | `timeout` | `env('POLI_PAGE_TIMEOUT')` | Timeout in seconds of each API call and of the PDF download (for `pdfStream()`, the longest wait for the next chunk). Greater than `0` and at most `600`. |
-| `retries.max_attempts` | `env('POLI_PAGE_RETRY_MAX_ATTEMPTS')` | Automatic retries on 429 and 5xx. Between `0` and `10`. |
+| `retries.max_retries` | `env('POLI_PAGE_RETRY_MAX_RETRIES')` | Retries after the first attempt, on 429 and 5xx: a call makes at most `max_retries + 1` attempts. Between `0` and `10`. `retries.max_attempts` (env `POLI_PAGE_RETRY_MAX_ATTEMPTS`) is the deprecated former name, with the same meaning: it raises an `E_USER_DEPRECATED` notice, and setting both to different values throws. |
 | `retries.delay_seconds` | `env('POLI_PAGE_RETRY_DELAY_SECONDS')` | Base delay between retries. Between `0` and `30`. |
 | `http_client` | `null` | Container key of a PSR-18 `ClientInterface` binding. |
 | `request_factory` | `null` | Container key of a PSR-17 `RequestFactoryInterface` binding. |
@@ -28,7 +28,7 @@ Every optional key is `null` by default, and the SDK then applies its own defaul
 
 ## Validation
 
-The client is built the first time something asks the container for `PoliPage\PoliPage`, and the config is validated then. An invalid value throws an `InvalidArgumentException` whose message names the option and the value, for example `Poli Page timeout must be > 0 and <= 600 seconds. Got: 0.` or `Poli Page retries.max_attempts must be between 0 and 10. Got: 11.`.
+The client is built the first time something asks the container for `PoliPage\PoliPage`, and the config is validated then. An invalid value throws an `InvalidArgumentException` whose message names the option and the value, for example `Poli Page timeout must be > 0 and <= 600 seconds. Got: 0.` or `Poli Page retries.max_retries must be between 0 and 10. Got: 11.`.
 
 A container key in `http_client`, `request_factory`, `stream_factory` or `logger` must be a string, and what it resolves to must implement the matching PSR interface. `on_retry` and `on_error` must be strings that resolve to a callable.
 
@@ -49,7 +49,7 @@ return [
     'base_url' => env('POLI_PAGE_BASE_URL'),
     'timeout' => env('POLI_PAGE_TIMEOUT', 30),
     'retries' => [
-        'max_attempts' => env('POLI_PAGE_RETRY_MAX_ATTEMPTS', 3),
+        'max_retries' => env('POLI_PAGE_RETRY_MAX_RETRIES', 3),
         'delay_seconds' => env('POLI_PAGE_RETRY_DELAY_SECONDS'),
     ],
     'http_client' => null,

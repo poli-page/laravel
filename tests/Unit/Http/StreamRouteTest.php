@@ -119,7 +119,7 @@ final class StreamRouteTest extends TestCase
         $config = $app->make(Repository::class);
         $config->set('poli-page.base_url', $mock->origin);
         // One attempt per call: the retry policy is the SDK's, tested there.
-        $config->set('poli-page.retries.max_attempts', 0);
+        $config->set('poli-page.retries.max_retries', 0);
         $app->forgetInstance(PoliPage::class);
 
         return $mock;

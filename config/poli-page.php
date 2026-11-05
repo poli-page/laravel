@@ -7,7 +7,8 @@ return [
     'base_url' => env('POLI_PAGE_BASE_URL'),
     'timeout' => env('POLI_PAGE_TIMEOUT'),
     'retries' => [
-        'max_attempts' => env('POLI_PAGE_RETRY_MAX_ATTEMPTS'),
+        // Retries after the first attempt (0 to 10). POLI_PAGE_RETRY_MAX_ATTEMPTS is the deprecated former env name.
+        'max_retries' => env('POLI_PAGE_RETRY_MAX_RETRIES', env('POLI_PAGE_RETRY_MAX_ATTEMPTS')),
         'delay_seconds' => env('POLI_PAGE_RETRY_DELAY_SECONDS'),
     ],
     'http_client' => null,

@@ -4,6 +4,12 @@ All notable changes to `poli-page/laravel` are documented here. Format follows [
 
 ## [Unreleased]
 
+### Added
+- `retries.max_retries` (env `POLI_PAGE_RETRY_MAX_RETRIES`): the number of retries after the first attempt (0 to 10), passed to the SDK as `maxRetries`.
+
+### Deprecated
+- `retries.max_attempts` (env `POLI_PAGE_RETRY_MAX_ATTEMPTS`) is renamed `retries.max_retries`. It never counted attempts: it was the SDK's `maxRetries`, so `3` made up to 4 attempts. The old key keeps its meaning and works, with an `E_USER_DEPRECATED` notice; setting both keys to different values throws `InvalidArgumentException`.
+
 ## [0.13.0] - 2026-11-02
 
 First release on Packagist. It requires `poli-page/sdk` 0.13 and passes the Poli Page API contract v0.13.0. The package shares its major.minor with the Poli Page API, so its first version is 0.13.0; a 0.11.0 was prepared and never published, and neither was the 0.1.0 development line. The Changed, Removed and Fixed entries below describe changes made during those lines.

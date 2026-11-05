@@ -65,7 +65,7 @@ final class PoliPageServiceProvider extends ServiceProvider
             return new PoliPage(
                 apiKey: (string) $config['api_key'],
                 baseUrl: self::asNullableString($config['base_url'] ?? null),
-                maxRetries: self::asNullableInt($retries['max_attempts'] ?? null),
+                maxRetries: self::resolveMaxRetries($retries),
                 retryDelay: self::asNullableFloat($retries['delay_seconds'] ?? null),
                 timeout: self::asNullableFloat($config['timeout'] ?? null),
                 httpClient: $httpClient,
@@ -133,14 +133,13 @@ final class PoliPageServiceProvider extends ServiceProvider
         /** @var array<string, mixed> $retries */
         $retries = is_array($config['retries'] ?? null) ? $config['retries'] : [];
 
-        $maxAttempts = $retries['max_attempts'] ?? null;
-        if ($maxAttempts !== null) {
-            $maxAttempts = (int) $maxAttempts;
-            if ($maxAttempts < 0 || $maxAttempts > 10) {
-                throw new InvalidArgumentException(
-                    "Poli Page retries.max_attempts must be between 0 and 10. Got: {$maxAttempts}.",
-                );
-            }
+        self::resolveMaxRetries($retries);
+        if (($retries['max_attempts'] ?? null) !== null) {
+            trigger_error(
+                "Poli Page config 'retries.max_attempts' is deprecated: it is the number of retries after "
+                ."the first attempt, not the number of attempts. Rename it to 'retries.max_retries' (same value).",
+                E_USER_DEPRECATED,
+            );
         }
 
         $delaySeconds = $retries['delay_seconds'] ?? null;
@@ -252,9 +251,35 @@ final class PoliPageServiceProvider extends ServiceProvider
         return $value === null ? null : (string) $value;
     }
 
-    private static function asNullableInt(mixed $value): ?int
+    /**
+     * The retry budget: `retries.max_retries`, or its deprecated former name
+     * `retries.max_attempts` (same meaning: retries after the first attempt).
+     *
+     * @param  array<string, mixed>  $retries
+     */
+    private static function resolveMaxRetries(array $retries): ?int
     {
-        return $value === null ? null : (int) $value;
+        $maxRetries = $retries['max_retries'] ?? null;
+        $alias = $retries['max_attempts'] ?? null;
+        if ($maxRetries !== null && $alias !== null && (int) $maxRetries !== (int) $alias) {
+            throw new InvalidArgumentException(
+                'Poli Page retries.max_retries and its deprecated alias retries.max_attempts are both set, '
+                ."to different values ({$maxRetries} and {$alias}). Keep retries.max_retries only.",
+            );
+        }
+        $name = $maxRetries !== null ? 'max_retries' : 'max_attempts';
+        $value = $maxRetries ?? $alias;
+        if ($value === null) {
+            return null;
+        }
+        $value = (int) $value;
+        if ($value < 0 || $value > 10) {
+            throw new InvalidArgumentException(
+                "Poli Page retries.{$name} must be between 0 and 10. Got: {$value}.",
+            );
+        }
+
+        return $value;
     }
 
     private static function asNullableFloat(mixed $value): ?float
