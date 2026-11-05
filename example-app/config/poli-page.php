@@ -7,7 +7,7 @@ return [
     'base_url' => env('POLI_PAGE_BASE_URL'),
     'timeout' => env('POLI_PAGE_TIMEOUT'),
     'retries' => [
-        'max_attempts' => env('POLI_PAGE_RETRY_MAX_ATTEMPTS'),
+        'max_retries' => env('POLI_PAGE_RETRY_MAX_RETRIES', env('POLI_PAGE_RETRY_MAX_ATTEMPTS')),
         'delay_seconds' => env('POLI_PAGE_RETRY_DELAY_SECONDS'),
     ],
     'http_client' => null,

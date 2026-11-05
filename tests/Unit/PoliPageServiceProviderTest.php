@@ -44,7 +44,7 @@ final class PoliPageServiceProviderTest extends TestCase
         $config->set('poli-page.api_key', 'pp_sandbox_fedcba9876543210fedcba9876543210');
         $config->set('poli-page.base_url', 'https://api.example.com');
         $config->set('poli-page.timeout', 42.0);
-        $config->set('poli-page.retries.max_attempts', 5);
+        $config->set('poli-page.retries.max_retries', 5);
         $config->set('poli-page.retries.delay_seconds', 0.1);
 
         // Singleton was already resolved with the default config in defineEnvironment().

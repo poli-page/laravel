@@ -23,7 +23,7 @@ final class ConfigValidationTest extends TestCase
             'api_key' => self::SANDBOX_API_KEY,
             'base_url' => 'https://api.example.com',
             'timeout' => 30.0,
-            'retries' => ['max_attempts' => 3, 'delay_seconds' => 0.25],
+            'retries' => ['max_retries' => 3, 'delay_seconds' => 0.25],
         ]);
         $app->forgetInstance(PoliPage::class);
 
@@ -121,19 +121,77 @@ final class ConfigValidationTest extends TestCase
         $app->make(PoliPage::class);
     }
 
-    public function test_retries_max_attempts_out_of_range(): void
+    /** @return iterable<string, array{0: string}> */
+    public static function retryKeyProvider(): iterable
+    {
+        yield 'max_retries' => ['max_retries'];
+        yield 'deprecated max_attempts' => ['max_attempts'];
+    }
+
+    #[DataProvider('retryKeyProvider')]
+    public function test_retries_budget_out_of_range(string $key): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/retries\.'.$key.' must be between 0 and 10/');
+        $this->buildWithRetries([$key => 11]);
+    }
+
+    public function test_max_retries_does_not_emit_a_deprecation(): void
+    {
+        $deprecations = $this->buildWithRetries(['max_retries' => 3]);
+
+        self::assertSame([], $deprecations);
+    }
+
+    public function test_max_attempts_alias_works_and_emits_one_deprecation(): void
+    {
+        $deprecations = $this->buildWithRetries(['max_attempts' => 3]);
+
+        self::assertCount(1, $deprecations);
+        self::assertStringContainsString('retries.max_retries', $deprecations[0]);
+    }
+
+    public function test_max_retries_and_alias_with_different_values_throw(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/max_retries.*max_attempts/');
+        $this->buildWithRetries(['max_retries' => 1, 'max_attempts' => 3]);
+    }
+
+    public function test_max_retries_and_alias_with_equal_values_are_accepted(): void
+    {
+        $deprecations = $this->buildWithRetries(['max_retries' => 3, 'max_attempts' => 3]);
+
+        self::assertCount(1, $deprecations);
+    }
+
+    /**
+     * @param  array<string, mixed>  $retries
+     * @return list<string> the E_USER_DEPRECATED messages raised while building the client
+     */
+    private function buildWithRetries(array $retries): array
     {
         $app = $this->app;
         \assert($app !== null);
 
         $config = $app->make(Repository::class);
         $config->set('poli-page.api_key', self::SANDBOX_API_KEY);
-        $config->set('poli-page.retries.max_attempts', 11);
+        $config->set('poli-page.retries', $retries);
         $app->forgetInstance(PoliPage::class);
 
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessageMatches('/max_attempts/');
-        $app->make(PoliPage::class);
+        $deprecations = [];
+        set_error_handler(static function (int $no, string $message) use (&$deprecations): bool {
+            $deprecations[] = $message;
+
+            return true;
+        }, E_USER_DEPRECATED);
+        try {
+            $app->make(PoliPage::class);
+        } finally {
+            restore_error_handler();
+        }
+
+        return $deprecations;
     }
 
     public function test_base_url_must_be_http_scheme(): void
