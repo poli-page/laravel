@@ -35,7 +35,7 @@ This package wraps the Poli Page PHP SDK as a Laravel-native integration: a serv
 
 - PHP 8.3+
 - Laravel 12.x or 13.x
-- [`poli-page/sdk`](https://packagist.org/packages/poli-page/sdk) 0.13.x (Composer installs it with the package)
+- [`poli-page/sdk`](https://packagist.org/packages/poli-page/sdk) 0.15.x (Composer installs it with the package)
 - A Poli Page API key from [app.poli.page](https://app.poli.page)
 
 ## Install
@@ -233,6 +233,7 @@ php artisan serve
 
 | Package | `poli-page/sdk` | Laravel | PHP |
 |---|---|---|---|
+| 0.15.x | 0.15.x | 12.x / 13.x | 8.3 / 8.4 / 8.5 |
 | 0.13.x | 0.13.x | 12.x / 13.x | 8.3 / 8.4 / 8.5 |
 
 The package shares its major.minor with the Poli Page API and requires the SDK of the same minor (see [RELEASING.md](RELEASING.md#versions)). It follows Laravel's own supported-versions window and tracks the latest stable PHP minor.
