@@ -4,7 +4,7 @@ The package is published on [Packagist](https://packagist.org) as **`poli-page/l
 
 ## Versions
 
-`poli-page/laravel` shares its major.minor with the Poli Page API: package `0.13.x` talks to API `0.13`, passes the [API contract](https://github.com/poli-page/api-contract) `v0.13.0`, and requires `poli-page/sdk` of the same minor (`^0.13.0`, which Composer reads as `>=0.13.0 <0.14`). Patch numbers are free: a fix to the package alone is a patch, whatever the API's or the SDK's patch. A change of the API contract, a new feature, and a raise of the minimum PHP or Laravel version are each a minor. The package may skip minors when it has nothing to ship for one. The Release workflow refuses a tag whose major.minor differs from the contract version pinned in `.github/workflows/ci.yml` or from the `poli-page/sdk` constraint in `composer.json` and `example-app/composer.json`.
+`poli-page/laravel` shares its major.minor with the Poli Page API: package `0.15.x` talks to API `0.15`, passes the [API contract](https://github.com/poli-page/api-contract) `v0.15.0`, and requires `poli-page/sdk` of the same minor (`^0.15.0`, which Composer reads as `>=0.15.0 <0.16`). Patch numbers are free: a fix to the package alone is a patch, whatever the API's or the SDK's patch. A change of the API contract, a new feature, and a raise of the minimum PHP or Laravel version are each a minor. The package may skip minors when it has nothing to ship for one. The Release workflow refuses a tag whose major.minor differs from the contract version pinned in `.github/workflows/ci.yml` or from the `poli-page/sdk` constraint in `composer.json` and `example-app/composer.json`.
 
 ## How a release runs
 
